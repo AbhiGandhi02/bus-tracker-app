@@ -81,6 +81,17 @@ exports.updateScheduledRide = async (req, res) => {
       });
     }
 
+    // --- NEW CHANGE ---
+    // Broadcast this status update to all connected clients
+    if (req.app.get('io') && req.body.status) {
+      req.app.get('io').emit('ride-status-update', {
+        rideId: ride._id,
+        status: ride.status
+      });
+      console.log(`[Socket] Emitted ride-status-update for ${ride._id}: ${ride.status}`);
+    }
+    // --- END OF CHANGE ---
+
     res.status(200).json({
       success: true,
       data: ride
@@ -115,14 +126,28 @@ exports.updateRideLocation = async (req, res) => {
       lng: parseFloat(lng),
       timestamp: Date.now()
     };
+    
+    // Also update status to 'In Progress' if location is sent
+    // and the ride was 'Scheduled'.
+    if (ride.status === 'Scheduled') {
+      ride.status = 'In Progress';
+      // Emit status change as well
+      if (req.app.get('io')) {
+        req.app.get('io').emit('ride-status-update', {
+          rideId: ride._id,
+          status: ride.status
+        });
+        console.log(`[Socket] Emitted ride-status-update (auto) for ${ride._id}: ${ride.status}`);
+      }
+    }
 
     await ride.save();
 
-    // Emit socket event
+    // Emit socket event for location
     if (req.app.get('io')) {
       req.app.get('io').emit('ride-location-update', {
         rideId: ride._id,
-        busNumber: ride.busId?.busNumber,
+        busNumber: ride.busId?.busNumber, // busId might not be populated here
         location: ride.currentLocation
       });
     }

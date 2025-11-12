@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Loader from './components/common/Loader';
+import AdminTrackRide from './pages/admin/TrackRide';
 
 // Auth Pages
 import LoginPage from './pages/auth/Login';
@@ -50,6 +51,15 @@ const App: React.FC = () => {
             <ScheduleRides />
           </ProtectedRoute>
         } />
+
+        <Route
+          path="/admin/track/:rideId"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminTrackRide />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Student Routes */}
         <Route path="/" element={

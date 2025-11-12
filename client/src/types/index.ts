@@ -68,6 +68,12 @@ export interface RouteInput {
 // ==========================================
 // Scheduled Ride Types (Daily Scheduling)
 // ==========================================
+
+// --- NEW TYPE ---
+// This is the type that was missing
+export type RideStatus = 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled';
+// --- END NEW TYPE ---
+
 export interface RideLocation {
   lat: number;
   lng: number;
@@ -80,7 +86,7 @@ export interface ScheduledRide {
   routeId: Route | string;
   date: Date | string;
   departureTime: string;
-  status: 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled';
+  status: RideStatus; // Now uses the exported type
   currentLocation?: RideLocation;
   createdAt: Date;
   updatedAt: Date;
@@ -91,7 +97,7 @@ export interface ScheduledRideInput {
   routeId: string;
   date: Date | string;
   departureTime: string;
-  status?: 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled';
+  status?: RideStatus;
 }
 
 // ==========================================
@@ -127,7 +133,6 @@ export interface ScheduleManagementProps {
 
 export interface RideListProps {
   rides: ScheduledRide[];
-  selectedRide: string | null;
   onSelectRide: (rideId: string | null) => void;
 }
 
@@ -148,3 +153,10 @@ export interface RideLocationUpdate {
   busNumber: string;
   location: RideLocation;
 }
+
+// --- NEW TYPE ---
+export interface RideStatusUpdate {
+  rideId: string;
+  status: RideStatus;
+}
+// --- END NEW TYPE ---

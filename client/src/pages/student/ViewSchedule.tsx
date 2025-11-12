@@ -1,40 +1,133 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import RideList from '../../components/User/RideList';
 import Button from '../../components/common/Button';
 import { scheduledRideAPI } from '../../services/api';
-import { ScheduledRide } from '../../types';
-import { useNavigate } from 'react-router-dom';
+import { ScheduledRide, RideStatusUpdate, RideLocationUpdate } from '../../types';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Loader from '../../components/common/Loader';
+import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { useSocket } from '../../context/SocketContext';
+
+// --- Helper Functions ---
+const getToday = (): Date => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Normalize to start of day
+  return today;
+};
+
+const formatDateForAPI = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const formatDateForDisplay = (date: Date): string => {
+  return date.toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+};
+
+const isSameDay = (date1: Date, date2: Date): boolean => {
+  return date1.getFullYear() === date2.getFullYear() &&
+         date1.getMonth() === date2.getMonth() &&
+         date1.getDate() === date2.getDate();
+};
+
+const parseDateFromQuery = (dateQuery: string | null): Date => {
+  if (dateQuery) {
+    const date = new Date(dateQuery);
+    // Check if date is valid. Note: NaNs are tricky.
+    if (!isNaN(date.getTime())) {
+      date.setHours(0, 0, 0, 0); // Normalize
+      return date;
+    }
+  }
+  return getToday(); // Default to today
+};
+// --- END HELPER FUNCTIONS ---
+
 
 const ViewSchedule: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams(); // Get URL params
+
   const [rides, setRides] = useState<ScheduledRide[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  const [selectedDate, setSelectedDate] = useState<Date>(
+    parseDateFromQuery(searchParams.get('date'))
+  );
+
+  const { socket } = useSocket();
+
+  const isToday = isSameDay(selectedDate, getToday());
+
+  // --- Data fetching logic ---
+  const fetchRides = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const dateString = formatDateForAPI(selectedDate);
+      
+      // Ensure URL matches state
+      setSearchParams({ date: dateString });
+
+      const response = await scheduledRideAPI.getByDate(dateString);
+      
+      if (response.data.success && response.data.data) {
+        setRides(response.data.data);
+      } else {
+        setRides([]);
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load schedule.');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedDate, setSearchParams]);
 
   useEffect(() => {
-    const fetchTodayRides = async () => {
-      try {
-        setLoading(true);
-        // Fetch rides for today. Backend defaults to today if no date param is sent,
-        // or you can be explicit: const today = new Date().toISOString().split('T')[0];
-        const response = await scheduledRideAPI.getByDate();
-        
-        if (response.data.success && response.data.data) {
-          setRides(response.data.data);
-        }
-      } catch (err) {
-        console.error(err);
-        setError('Failed to load today\'s schedule.');
-      } finally {
-        setLoading(false);
-      }
+    fetchRides();
+  }, [fetchRides]);
+
+  // --- Socket logic ---
+  useEffect(() => {
+    // Only listen for live updates if the selected date is today
+    if (!socket || !isToday) {
+      return;
+    }
+    const handleStatusUpdate = (update: RideStatusUpdate) => {
+      console.log('[Socket] Student View received ride-status-update:', update);
+      setRides(prevRides => 
+        prevRides.map(ride => 
+          ride._id === update.rideId ? { ...ride, status: update.status } : ride
+        )
+      );
+    };
+    const handleLocationUpdate = (update: RideLocationUpdate) => {
+      // Also update status to 'In Progress' if location comes in
+      setRides(prevRides => 
+        prevRides.map(ride => 
+          ride._id === update.rideId 
+            ? { ...ride, currentLocation: update.location, status: 'In Progress' }
+            : ride
+        )
+      );
     };
 
-    fetchTodayRides();
-  }, []);
+    socket.on('ride-status-update', handleStatusUpdate);
+    socket.on('ride-location-update', handleLocationUpdate);
+
+    return () => {
+      socket.off('ride-status-update', handleStatusUpdate);
+      socket.off('ride-location-update', handleLocationUpdate);
+    };
+  }, [socket, isToday]); // Only re-subscribe if socket or isToday changes
 
   const handleLogout = async () => {
     await logout();
@@ -43,13 +136,24 @@ const ViewSchedule: React.FC = () => {
 
   const handleRideSelect = (rideId: string | null) => {
     if (rideId) {
-      navigate(`/track/${rideId}`);
+      const dateString = formatDateForAPI(selectedDate);
+      navigate(`/track/${rideId}?date=${dateString}`);
     }
   };
 
-  if (loading) {
-    return <div className="h-screen flex items-center justify-center"><Loader size="lg" /></div>;
-  }
+  // --- Date Navigation Handlers ---
+  const changeDay = (days: number) => {
+    setSelectedDate(prevDate => {
+      const newDate = new Date(prevDate);
+      newDate.setDate(newDate.getDate() + days);
+      return newDate;
+    });
+  };
+
+  const goToToday = () => {
+    setSelectedDate(getToday());
+  };
+  // --- END Handlers ---
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
@@ -78,12 +182,28 @@ const ViewSchedule: React.FC = () => {
       {/* Main Content */}
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Today's Schedule</h2>
-          <p className="text-gray-500 mt-1">
-            {new Date().toLocaleDateString('en-US', { 
-              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
-            })}
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900">Bus Schedule</h2>
+          
+          {/* Date Navigation UI */}
+          <div className="mt-4 flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-gray-200">
+            <Button variant="outline" onClick={() => changeDay(-1)} className="!px-3">
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex-1 text-center">
+              <span className="font-semibold text-lg text-gray-800">
+                {formatDateForDisplay(selectedDate)}
+              </span>
+              {!isToday && (
+                <Button variant="secondary" onClick={goToToday} className="ml-3 text-xs !py-1 !px-2">
+                  <Calendar className="w-3 h-3 mr-1" />
+                  Go to Today
+                </Button>
+              )}
+            </div>
+            <Button variant="outline" onClick={() => changeDay(1)} className="!px-3">
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
 
         {error && (
@@ -93,13 +213,23 @@ const ViewSchedule: React.FC = () => {
           </div>
         )}
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-[calc(100vh-200px)]">
-          <RideList 
-            rides={rides} 
-            selectedRide={null} 
-            onSelectRide={handleRideSelect} 
-          />
+        {/* --- THIS IS THE FIX --- */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-[calc(100vh-250px)]">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader size="lg" />
+            </div>
+          ) : (
+            <RideList 
+              rides={rides} 
+              onSelectRide={handleRideSelect}
+              isToday={isToday}
+              selectedDate={selectedDate} 
+            />
+          )}
         </div>
+        {/* --- END OF FIX --- */}
+        
       </main>
     </div>
   );

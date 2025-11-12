@@ -1,7 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-// --- MODIFICATION: Import useSearchParams ---
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-// --- END MODIFICATION ---
 import { ScheduledRide, RideStatusUpdate, RideLocationUpdate } from '../../types';
 import { scheduledRideAPI } from '../../services/api';
 import MapComponent from '../../components/Map/MapComponent';
@@ -10,8 +8,9 @@ import Button from '../../components/common/Button';
 import Loader from '../../components/common/Loader';
 import { ArrowLeft, Map, Calendar, CheckCircle } from 'lucide-react';
 import { useSocket } from '../../context/SocketContext';
+import AdminLayout from '../../components/layout/AdminLayout'; // Use AdminLayout
 
-// --- Helper Functions (no change) ---
+// --- Helper Functions ---
 const isSameDay = (date1: Date, date2: Date): boolean => {
   return date1.getFullYear() === date2.getFullYear() &&
          date1.getMonth() === date2.getMonth() &&
@@ -22,15 +21,18 @@ const getToday = (): Date => {
   today.setHours(0, 0, 0, 0);
   return today;
 };
+
+// --- FIX: Helper to format date string consistently using UTC ---
 const formatDateForQuery = (date: Date | string): string => {
   const d = new Date(date);
-  const year = d.getFullYear();
-  const month = (d.getMonth() + 1).toString().padStart(2, '0');
-  const day = d.getDate().toString().padStart(2, '0');
+  // Use UTC dates to avoid timezone shift
+  const year = d.getUTCFullYear();
+  const month = (d.getUTCMonth() + 1).toString().padStart(2, '0');
+  const day = d.getUTCDate().toString().padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
+// --- END FIX ---
 // --- End Helper Functions ---
-
 
 const MapOverlay: React.FC<{ status: string, departureTime: string }> = ({ status, departureTime }) => {
   let Icon = Map;
@@ -46,7 +48,6 @@ const MapOverlay: React.FC<{ status: string, departureTime: string }> = ({ statu
     Icon = CheckCircle;
     text = "This ride has been cancelled.";
   }
-  // 'In Progress' is correctly handled by not showing this overlay
 
   return (
     <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm flex flex-col items-center justify-center text-center p-4 z-10">
@@ -58,41 +59,32 @@ const MapOverlay: React.FC<{ status: string, departureTime: string }> = ({ statu
   );
 };
 
-const TrackRide: React.FC = () => {
+const AdminTrackRide: React.FC = () => {
   const { rideId } = useParams<{ rideId: string }>();
   const navigate = useNavigate();
-  // --- MODIFICATION: Get search params from URL ---
   const [searchParams] = useSearchParams();
-  // --- END MODIFICATION ---
   const [ride, setRide] = useState<ScheduledRide | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { socket } = useSocket();
 
-  // --- MODIFICATION: Data Fetching ---
+  // --- Data Fetching ---
   useEffect(() => {
     if (!rideId) {
       setError('No Ride ID provided.');
       setLoading(false);
       return;
     }
-
-    // --- NEW: Read date from URL ---
     const dateFromQuery = searchParams.get('date');
     if (!dateFromQuery) {
       setError('No date provided in URL.');
       setLoading(false);
       return;
     }
-    // --- END NEW ---
 
     const fetchRideData = async () => {
       try {
-        // --- THIS IS THE FIX ---
-        // Fetch rides for the specific date from the URL, not just "today"
         const response = await scheduledRideAPI.getByDate(dateFromQuery);
-        // --- END FIX ---
-
         if (response.data.success && response.data.data) {
           const foundRide = response.data.data.find(r => r._id === rideId);
           if (foundRide) {
@@ -110,29 +102,30 @@ const TrackRide: React.FC = () => {
         setLoading(false);
       }
     };
-
     fetchRideData();
-  }, [rideId, searchParams]); // --- Re-run if rideId or searchParams change ---
+  }, [rideId, searchParams]);
 
   const isToday = useMemo(() => {
     if (!ride) return false;
-    return isSameDay(new Date(ride.date), getToday());
+    // We must use UTC for this comparison too
+    const rideDate = new Date(ride.date);
+    const today = new Date();
+    return rideDate.getUTCFullYear() === today.getUTCFullYear() &&
+           rideDate.getUTCMonth() === today.getUTCMonth() &&
+           rideDate.getUTCDate() === today.getUTCDate();
   }, [ride]);
 
-  // --- Socket Listeners (Modified) ---
+  // --- Socket Listeners ---
   useEffect(() => {
-    // Only listen for updates if the socket exists, we have a ride, 
-    // it's for today, and it's not completed/cancelled.
-    if (!socket || !ride || !isToday || ride.status === 'Completed' || ride.status === 'Cancelled') {
+    if (!socket || !ride || ride.status === 'Completed' || ride.status === 'Cancelled') {
       return;
     }
-
+    
     const handleStatusUpdate = (update: RideStatusUpdate) => {
       if (update.rideId === ride._id) {
         setRide(prevRide => prevRide ? { ...prevRide, status: update.status } : null);
       }
     };
-
     const handleLocationUpdate = (update: RideLocationUpdate) => {
       if (update.rideId === ride._id) {
         setRide(prevRide => prevRide ? { 
@@ -142,60 +135,55 @@ const TrackRide: React.FC = () => {
         } : null);
       }
     };
-
     socket.on('ride-status-update', handleStatusUpdate);
     socket.on('ride-location-update', handleLocationUpdate);
-
     return () => {
       socket.off('ride-status-update', handleStatusUpdate);
       socket.off('ride-location-update', handleLocationUpdate);
     };
-  }, [socket, ride, isToday]); // <-- isToday is correctly used here
+  }, [socket, ride]);
 
-  // --- Back Button Handler (Correct from your context) ---
   const handleBack = () => {
     if (ride) {
-      // Navigate back to the schedule page for the ride's date
       const dateString = formatDateForQuery(ride.date);
-      navigate(`/?date=${dateString}`);
+      navigate(`/admin/schedule?date=${dateString}`);
     } else {
-      // Fallback to home
-      navigate('/');
+      navigate('/admin/schedule');
     }
   };
 
   if (loading) {
-    return <div className="h-screen flex items-center justify-center"><Loader size="lg" /></div>;
+    return (
+      <AdminLayout title="Loading Ride...">
+        <div className="flex items-center justify-center h-[50vh]"><Loader size="lg" /></div>
+      </AdminLayout>
+    );
   }
 
   if (error || !ride) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <p className="text-red-600 mb-4">{error || 'Ride not found'}</p>
-        <Button onClick={() => navigate('/')}>Go Back Home</Button>
-      </div>
+      <AdminLayout title="Error">
+        <div className="flex flex-col items-center justify-center h-[50vh]">
+          <p className="text-red-600 mb-4">{error || 'Ride not found'}</p>
+          <Button onClick={handleBack}>Back to Schedule</Button>
+        </div>
+      </AdminLayout>
     );
   }
   
-  // Logic is now correct. Map shows if status is 'In Progress'
   const isLiveTracking = ride.status === 'In Progress';
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
-      <header className="bg-white shadow-sm p-4 flex items-center z-10">
-        <button 
-          onClick={handleBack} 
-          className="mr-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
-        >
-          <ArrowLeft className="w-6 h-6 text-gray-600" />
-        </button>
-        <h1 className="text-xl font-bold text-gray-800">Ride Details</h1>
-      </header>
-
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden p-4 gap-4">
+    <AdminLayout title="Track Ride" actions={
+      <Button variant="outline" onClick={handleBack}>
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Back to Schedule
+      </Button>
+    }>
+      <div className="flex flex-col lg:flex-row gap-6" style={{ height: 'calc(100vh - 150px)' }}>
         
-        <div className="flex-1 lg:flex-[2] h-[50vh] lg:h-auto min-h-[300px] rounded-xl overflow-hidden shadow-lg bg-white relative">
-          {/* This logic is now correct. Overlay shows if not live tracking. */}
+        {/* Map View */}
+        <div className="lg:flex-[3] h-[50vh] lg:h-full min-h-[300px] rounded-xl overflow-hidden shadow-lg bg-white relative">
           {!isLiveTracking && (
             <MapOverlay status={ride.status} departureTime={ride.departureTime} />
           )}
@@ -205,12 +193,14 @@ const TrackRide: React.FC = () => {
           />
         </div>
 
-        <div className="lg:w-[400px] h-[40vh] lg:h-auto overflow-y-auto">
+        {/* Details View */}
+        <div className="lg:w-[400px] lg:h-full overflow-y-auto">
           <RideDetails ride={ride} />
         </div>
+        
       </div>
-    </div>
+    </AdminLayout>
   );
 };
 
-export default TrackRide;
+export default AdminTrackRide;
