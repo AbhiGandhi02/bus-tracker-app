@@ -1,8 +1,11 @@
-import axios, { AxiosInstance } from 'axios';
+// src/services/api.ts
+import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { 
-  Bus, Route, LoginCredentials, SignupData, User, 
-  BusLocation, BusInput, RouteInput 
+  BusMaster, Route, ScheduledRide,
+  BusMasterInput, RouteInput, ScheduledRideInput,
+  RideLocation, ApiResponse 
 } from '../types';
+import { auth } from '../config/firebase';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -13,12 +16,20 @@ const api: AxiosInstance = axios.create({
   }
 });
 
-// Add token to requests
+// Add Firebase token to requests
 api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+  async (config: InternalAxiosRequestConfig) => {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      try {
+         // Force refresh token if it's about to expire
+        const token = await currentUser.getIdToken(false);
+        if (config.headers) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+      } catch (error) {
+        console.error("Error getting token", error);
+      }
     }
     return config;
   },
@@ -32,77 +43,43 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Unauthorized - clear token and redirect to login
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      // Unauthorized - could redirect to login, or let AuthContext handle it
+      // window.location.href = '/login'; // Optional: might be better handled by react-router
+      console.warn("Unauthorized API call");
     }
     return Promise.reject(error);
   }
 );
 
-// Response Types matching backend structure
-interface AuthResponse {
-  success: boolean;
-  token: string;
-  user: User;
-}
-
-interface UserResponse {
-  success: boolean;
-  user: User;
-}
-
-interface BusesResponse {
-  success: boolean;
-  count: number;
-  data: Bus[];
-}
-
-interface BusResponse {
-  success: boolean;
-  data: Bus;
-}
-
-interface RoutesResponse {
-  success: boolean;
-  count: number;
-  data: Route[];
-}
-
-interface RouteResponse {
-  success: boolean;
-  data: Route;
-}
-
-interface DeleteResponse {
-  success: boolean;
-  message: string;
-}
-
 // Auth API
 export const authAPI = {
-  signup: (data: SignupData) => api.post<AuthResponse>('/auth/signup', data),
-  login: (data: LoginCredentials) => api.post<AuthResponse>('/auth/login', data),
-  getMe: () => api.get<UserResponse>('/auth/me')
+  getMe: () => api.get<ApiResponse<any>>('/auth/me'),
+  setAdmin: (email: string) => api.post<ApiResponse<any>>('/auth/set-admin', { email })
 };
 
-// Bus API
-export const busAPI = {
-  getAll: () => api.get<BusesResponse>('/buses'),
-  getOne: (id: string) => api.get<BusResponse>(`/buses/${id}`),
-  create: (data: BusInput) => api.post<BusResponse>('/buses', data),
-  update: (id: string, data: Partial<BusInput>) => api.put<BusResponse>(`/buses/${id}`, data),
-  delete: (id: string) => api.delete<DeleteResponse>(`/buses/${id}`),
-  updateLocation: (id: string, location: BusLocation) => api.post<BusResponse>(`/buses/${id}/location`, location)
+// Bus Master API
+export const busMasterAPI = {
+  getAll: () => api.get<ApiResponse<BusMaster[]>>('/bus-master'),
+  create: (data: BusMasterInput) => api.post<ApiResponse<BusMaster>>('/bus-master', data),
+  update: (id: string, data: Partial<BusMasterInput>) => api.put<ApiResponse<BusMaster>>(`/bus-master/${id}`, data),
+  delete: (id: string) => api.delete<ApiResponse<null>>(`/bus-master/${id}`)
 };
 
-// Route API
+// Route API (Simplified)
 export const routeAPI = {
-  getAll: () => api.get<RoutesResponse>('/routes'),
-  getOne: (id: string) => api.get<RouteResponse>(`/routes/${id}`),
-  create: (data: RouteInput) => api.post<RouteResponse>('/routes', data),
-  update: (id: string, data: Partial<RouteInput>) => api.put<RouteResponse>(`/routes/${id}`, data),
-  delete: (id: string) => api.delete<DeleteResponse>(`/routes/${id}`)
+  getAll: () => api.get<ApiResponse<Route[]>>('/routes'),
+  create: (data: RouteInput) => api.post<ApiResponse<Route>>('/routes', data),
+  update: (id: string, data: Partial<RouteInput>) => api.put<ApiResponse<Route>>(`/routes/${id}`, data),
+  delete: (id: string) => api.delete<ApiResponse<null>>(`/routes/${id}`)
+};
+
+// Scheduled Ride API
+export const scheduledRideAPI = {
+  getByDate: (date?: string) => api.get<ApiResponse<ScheduledRide[]>>('/scheduled-rides', { params: { date } }),
+  create: (data: ScheduledRideInput) => api.post<ApiResponse<ScheduledRide>>('/scheduled-rides', data),
+  update: (id: string, data: Partial<ScheduledRideInput>) => api.put<ApiResponse<ScheduledRide>>(`/scheduled-rides/${id}`, data),
+  updateLocation: (id: string, location: RideLocation) => api.post<ApiResponse<ScheduledRide>>(`/scheduled-rides/${id}/location`, location),
+  delete: (id: string) => api.delete<ApiResponse<null>>(`/scheduled-rides/${id}`)
 };
 
 export default api;

@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Map, { Marker, Popup } from 'react-map-gl';
 import type { ViewState } from 'react-map-gl';
-import { ScheduledRide, RideMapProps, RideLocationUpdate } from '../../types';
+import { ScheduledRide, RideMapProps } from '../../types';
 import { useSocket } from '../../context/SocketContext';
 import { BusFront, Loader2 } from 'lucide-react';
 import config from '../../config';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
-// Helper to determine ride color based on status
+// Helper to determine marker color based on status
 const getRideColor = (status: ScheduledRide['status']) => {
   switch (status) {
     case 'Scheduled':
@@ -22,20 +23,14 @@ const getRideColor = (status: ScheduledRide['status']) => {
   }
 };
 
-const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRideId }) => {
+const RideMap: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRideId }) => {
   const [selectedRide, setSelectedRide] = useState<ScheduledRide | null>(null);
-  const [ridesWithLocation, setRidesWithLocation] = useState<ScheduledRide[]>(rides);
-  const [isLoading] = useState(false);
-  const [error] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const { socket } = useSocket();
 
   const [viewState, setViewState] = useState<Partial<ViewState>>(config.MAP_DEFAULTS);
-
-  // Update rides state when props change
-  useEffect(() => {
-    setRidesWithLocation(rides);
-  }, [rides]);
 
   // Set initial map center when rides prop changes
   useEffect(() => {
@@ -43,7 +38,7 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
       const firstRideWithLocation = rides.find(
         ride => ride.currentLocation && ride.currentLocation.lat && ride.currentLocation.lng
       );
-      if (firstRideWithLocation && firstRideWithLocation.currentLocation) {
+      if (firstRideWithLocation) {
         setViewState((prev) => ({
           ...prev,
           latitude: firstRideWithLocation.currentLocation!.lat,
@@ -53,54 +48,13 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
     }
   }, [rides]);
 
-  // Update selectedRide when selectedRideId changes
-  useEffect(() => {
-    if (selectedRideId) {
-      const ride = ridesWithLocation.find(r => r._id === selectedRideId);
-      if (ride) {
-        setSelectedRide(ride);
-        // Center map on selected ride if it has location
-        if (ride.currentLocation) {
-          setViewState((prev) => ({
-            ...prev,
-            latitude: ride.currentLocation!.lat,
-            longitude: ride.currentLocation!.lng,
-            zoom: 14,
-          }));
-        }
-      }
-    } else {
-      setSelectedRide(null);
-    }
-  }, [selectedRideId, ridesWithLocation]);
-
-  // Listen for real-time location updates via Socket.io
+  // Listen for real-time location updates
   useEffect(() => {
     if (!socket) return;
 
-    const handleLocationUpdate = (update: RideLocationUpdate) => {
-      console.log('📍 Received location update:', update);
-
-      setRidesWithLocation((prevRides) =>
-        prevRides.map((ride) =>
-          ride._id === update.rideId
-            ? {
-                ...ride,
-                currentLocation: update.location,
-              }
-            : ride
-        )
-      );
-
-      // Update selected ride if it's the one being updated
-      setSelectedRide((prevSelected) =>
-        prevSelected && prevSelected._id === update.rideId
-          ? {
-              ...prevSelected,
-              currentLocation: update.location,
-            }
-          : prevSelected
-      );
+    const handleLocationUpdate = (update: any) => {
+      console.log('Ride location update:', update);
+      // Update will be handled by parent component refreshing rides
     };
 
     socket.on('ride-location-update', handleLocationUpdate);
@@ -110,22 +64,38 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
     };
   }, [socket]);
 
-  // Helper functions to extract data
+  // Update selectedRide when selectedRideId changes
+  useEffect(() => {
+    if (selectedRideId) {
+      const ride = rides.find(r => r._id === selectedRideId);
+      if (ride) {
+        setSelectedRide(ride);
+        if (ride.currentLocation) {
+          setViewState((prev) => ({
+            ...prev,
+            latitude: ride.currentLocation!.lat,
+            longitude: ride.currentLocation!.lng,
+            zoom: 14
+          }));
+        }
+      }
+    } else {
+      setSelectedRide(null);
+    }
+  }, [selectedRideId, rides]);
+
+  // Helper functions
   const getBusNumber = (ride: ScheduledRide) => {
     return typeof ride.busId === 'object' ? ride.busId.busNumber : 'Unknown';
-  };
-
-  const getDriverName = (ride: ScheduledRide) => {
-    return typeof ride.busId === 'object' ? ride.busId.driverName : null;
   };
 
   const getRouteName = (ride: ScheduledRide) => {
     return typeof ride.routeId === 'object' ? ride.routeId.routeName : 'Unknown';
   };
 
-  // Create Marker components
+  // Create Marker components - only for rides with current location
   const markers = useMemo(() => 
-    ridesWithLocation
+    rides
       .filter(ride => ride.currentLocation && ride.currentLocation.lat && ride.currentLocation.lng)
       .map(ride => (
         <Marker
@@ -139,7 +109,7 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
           }}
         >
           <div 
-            className="p-1.5 rounded-full shadow-lg cursor-pointer hover:scale-110 transition-transform"
+            className="p-1.5 rounded-full shadow-lg cursor-pointer hover:scale-110 transition-transform animate-pulse"
             style={{ 
               backgroundColor: getRideColor(ride.status),
               border: '2px solid white'
@@ -148,7 +118,7 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
             <BusFront className="w-5 h-5 text-white" />
           </div>
         </Marker>
-      )), [ridesWithLocation]
+      )), [rides]
   );
 
   if (isLoading) {
@@ -196,7 +166,9 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
             closeOnClick={false}
           >
             <div className="p-2">
-              <h3 className="text-base font-bold text-indigo-700 mb-1">{getBusNumber(selectedRide)}</h3>
+              <h3 className="text-base font-bold text-indigo-700 mb-1">
+                {getBusNumber(selectedRide)}
+              </h3>
               <p className="text-sm mb-1">
                 <span className="font-medium">Status:</span>{' '}
                 <span 
@@ -206,19 +178,17 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
                   {selectedRide.status}
                 </span>
               </p>
-              {getDriverName(selectedRide) && (
-                <p className="text-xs text-gray-600">
-                  <span className="font-medium">Driver:</span> {getDriverName(selectedRide)}
-                </p>
-              )}
-              {getRouteName(selectedRide) && (
-                <p className="text-xs text-gray-600">
-                  <span className="font-medium">Route:</span> {getRouteName(selectedRide)}
-                </p>
-              )}
-              <p className="text-xs text-gray-500 mt-2">
-                Last updated: {new Date(selectedRide.currentLocation.timestamp).toLocaleTimeString()}
+              <p className="text-xs text-gray-600">
+                <span className="font-medium">Route:</span> {getRouteName(selectedRide)}
               </p>
+              <p className="text-xs text-gray-600">
+                <span className="font-medium">Time:</span> {selectedRide.departureTime}
+              </p>
+              {selectedRide.currentLocation.timestamp && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Updated: {new Date(selectedRide.currentLocation.timestamp).toLocaleTimeString()}
+                </p>
+              )}
             </div>
           </Popup>
         )}
@@ -227,4 +197,4 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
   );
 };
 
-export default MapComponent;
+export default RideMap;

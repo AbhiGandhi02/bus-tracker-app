@@ -1,6 +1,13 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { authAPI } from '../services/api';
-import { User, LoginCredentials, SignupData, AuthContextType } from '../types';
+import { 
+  signInWithPopup, 
+  signOut, 
+  onAuthStateChanged,
+  User as FirebaseUser 
+} from 'firebase/auth';
+import { auth, googleProvider } from '../config/firebase';
+import { User, AuthContextType } from '../types'; // Removed ApiResponse from imports here
+import axios from 'axios';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -16,77 +23,72 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// Specific response type for auth endpoints that don't use the 'data' field
+interface AuthApiResponse {
+  success: boolean;
+  user?: User;
+  message?: string;
+}
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if user is logged in on mount
-  useEffect(() => {
-    checkAuth();
-  }, []);
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-  const checkAuth = async () => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const response = await authAPI.getMe();
-        // Backend returns: { success: true, user: {...} }
-        if (response.data.success && response.data.user) {
-          setUser(response.data.user);
-        } else {
-          throw new Error('Invalid user data');
+  // Listen to Firebase auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        try {
+          // Get ID token
+          const idToken = await firebaseUser.getIdToken();
+          
+          // Fetch user data from our backend
+          // We use specific AuthApiResponse type here
+          const response = await axios.get<AuthApiResponse>(`${API_URL}/auth/me`, {
+            headers: {
+              Authorization: `Bearer ${idToken}`
+            }
+          });
+
+          if (response.data.success && response.data.user) {
+            setUser(response.data.user);
+          }
+        } catch (err) {
+          console.error('Error fetching user data:', err);
+          setUser(null);
         }
-      } catch (err) {
-        console.error('Auth check failed:', err);
-        localStorage.removeItem('token');
+      } else {
         setUser(null);
       }
-    }
-    setLoading(false);
-  };
+      setLoading(false);
+    });
 
-  const signup = async (userData: SignupData) => {
+    return () => unsubscribe();
+  }, [API_URL]);
+
+  const signInWithGoogle = async () => {
     try {
       setError(null);
-      const response = await authAPI.signup(userData);
-      // Backend returns: { success: true, token: "...", user: {...} }
-      if (response.data.success) {
-        const { token, user: newUser } = response.data;
-        localStorage.setItem('token', token);
-        setUser(newUser);
-        return { success: true };
-      }
-      throw new Error('Invalid response from server');
+      await signInWithPopup(auth, googleProvider);
+      // onAuthStateChanged will handle the rest
+      return { success: true };
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Signup failed';
+      const message = err.message || 'Failed to sign in with Google';
       setError(message);
       return { success: false, error: message };
     }
   };
 
-  const login = async (credentials: LoginCredentials) => {
+  const logout = async () => {
     try {
-      setError(null);
-      const response = await authAPI.login(credentials);
-      // Backend returns: { success: true, token: "...", user: {...} }
-      if (response.data.success) {
-        const { token, user: loggedInUser } = response.data;
-        localStorage.setItem('token', token);
-        setUser(loggedInUser);
-        return { success: true };
-      }
-      throw new Error('Invalid response from server');
-    } catch (err: any) {
-      const message = err.response?.data?.message || 'Login failed';
-      setError(message);
-      return { success: false, error: message };
+      await signOut(auth);
+      setUser(null);
+    } catch (err) {
+      console.error('Error signing out:', err);
     }
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
   };
 
   const isAdmin = () => {
@@ -97,8 +99,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     loading,
     error,
-    signup,
-    login,
+    signInWithGoogle,
     logout,
     isAdmin
   };

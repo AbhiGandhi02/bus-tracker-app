@@ -1,122 +1,150 @@
-// User Types
+// src/types/index.ts
+
+// ==========================================
+// User Types (Firebase)
+// ==========================================
 export interface User {
   id: string;
+  firebaseUid: string;
   name: string;
   email: string;
+  photoURL?: string;
   role: 'user' | 'admin';
   createdAt?: Date;
-}
-
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-export interface SignupData {
-  name: string;
-  email: string;
-  password: string;
+  lastLogin?: Date;
 }
 
 export interface AuthContextType {
   user: User | null;
   loading: boolean;
   error: string | null;
-  signup: (userData: SignupData) => Promise<{ success: boolean; error?: string }>;
-  login: (credentials: LoginCredentials) => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
+  signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
   isAdmin: () => boolean;
 }
 
-// Bus Types
-export interface BusLocation {
+// ==========================================
+// Bus Master Types (Static Bus Records)
+// ==========================================
+export interface BusMaster {
+  _id: string;
+  busNumber: string;
+  busType: 'AC' | 'Non-AC' | 'Mini' | 'Deluxe';
+  driverName?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface BusMasterInput {
+  busNumber: string;
+  busType: 'AC' | 'Non-AC' | 'Mini' | 'Deluxe';
+  driverName?: string;
+}
+
+// ==========================================
+// Route Types (Simplified - No Stops)
+// ==========================================
+export interface Route {
+  _id: string;
+  routeNumber: string;
+  routeName: string;
+  departureLocation: string;
+  arrivalLocation: string;
+  rideTime: string; // e.g., "45 minutes"
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface RouteInput {
+  routeNumber: string;
+  routeName: string;
+  departureLocation: string;
+  arrivalLocation: string;
+  rideTime: string;
+}
+
+// ==========================================
+// Scheduled Ride Types (Daily Scheduling)
+// ==========================================
+export interface RideLocation {
   lat: number;
   lng: number;
   timestamp: Date | string;
 }
 
-export interface Bus {
+export interface ScheduledRide {
   _id: string;
-  busNumber: string;
-  status: 'Active' | 'Inactive' | 'Maintenance';
-  location: BusLocation;
-  routeId?: Route | string | {
-    _id: string;
-    routeName: string;
-    routeNumber: string;
-    stops?: Stop[];
-  };
-  driverName?: string;
-  driverPhone?: string;
-  capacity?: number;
-  createdAt?: Date;
-  updatedAt?: Date;
+  busId: BusMaster | string;
+  routeId: Route | string;
+  date: Date | string;
+  departureTime: string;
+  status: 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled';
+  currentLocation?: RideLocation;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// Bus Input for create/update
-export interface BusInput {
-  busNumber: string;
+export interface ScheduledRideInput {
+  busId: string;
   routeId: string;
-  driverName?: string;
-  driverPhone?: string;
-  capacity?: number;
-  status: 'Active' | 'Inactive' | 'Maintenance';
+  date: Date | string;
+  departureTime: string;
+  status?: 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled';
 }
 
-// Route Types
-export interface Stop {
-  name: string;
-  lat: number;
-  lng: number;
-  arrivalTime: string;
-  order: number;
-  _id?: string;
+// ==========================================
+// API Response Types
+// ==========================================
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  count?: number;
+  message?: string;
+  error?: string;
 }
 
-export interface Route {
-  _id: string;
-  routeName: string;
-  routeNumber: string;
-  startTime: string;
-  endTime: string;
-  stops: Stop[];
-  isActive?: boolean;
-  createdAt?: Date;
-}
-
-// Route Input for create/update
-export interface RouteInput {
-  routeName: string;
-  routeNumber: string;
-  startTime: string;
-  endTime: string;
-  stops: Stop[];
-  isActive?: boolean;
-}
-
+// ==========================================
 // Component Props Types
-export interface BusListProps {
-  buses: Bus[];
-  selectedBus: string | null;
-  onSelectBus: (busId: string) => void;
-}
-
-export interface BusMapProps {
-  buses: Bus[];
-  selectedBus?: string | null;
-}
-
-export interface BusDetailsProps {
-  bus: Bus | null;
-}
-
-export interface BusManagementProps {
-  buses: Bus[];
-  routes: Route[];
+// ==========================================
+export interface BusMasterManagementProps {
+  buses: BusMaster[];
   onUpdate: () => void;
 }
 
 export interface RouteManagementProps {
   routes: Route[];
   onUpdate: () => void;
+}
+
+export interface ScheduleManagementProps {
+  buses: BusMaster[];
+  routes: Route[];
+  scheduledRides: ScheduledRide[];
+  onUpdate: () => void;
+}
+
+export interface RideListProps {
+  rides: ScheduledRide[];
+  selectedRide: string | null;
+  onSelectRide: (rideId: string | null) => void;
+}
+
+export interface RideDetailsProps {
+  ride: ScheduledRide | null;
+}
+
+export interface RideMapProps {
+  rides: ScheduledRide[];
+  selectedRide?: string | null;
+}
+
+// ==========================================
+// Socket Event Types
+// ==========================================
+export interface RideLocationUpdate {
+  rideId: string;
+  busNumber: string;
+  location: RideLocation;
 }

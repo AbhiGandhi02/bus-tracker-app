@@ -1,14 +1,20 @@
+// src/main.tsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './index.css';
+import { BrowserRouter } from 'react-router-dom';
 import App from './App';
+import { AuthProvider } from './context/AuthContext';
+import { SocketProvider } from './context/SocketContext'; // Import this
+import './index.css';
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
-
-root.render(
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <AuthProvider>
+        <SocketProvider> {/* Add this wrapper */}
+          <App />
+        </SocketProvider>
+      </AuthProvider>
+    </BrowserRouter>
   </React.StrictMode>
 );
