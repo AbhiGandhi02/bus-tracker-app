@@ -1,10 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { signup, login, getMe } = require('../controllers/authController');
-const { protect } = require('../middleware/auth');
+const { getMe, setAdmin } = require('../controllers/authController');
+const { verifyFirebaseToken } = require('../middleware/firebaseAuth');
 
-router.post('/signup', signup);
-router.post('/login', login);
-router.get('/me', protect, getMe);
+router.get('/me', verifyFirebaseToken, getMe);
+router.post('/set-admin', verifyFirebaseToken, setAdmin); // Remove in production
 
 module.exports = router;

@@ -1,97 +1,98 @@
-const Route = require('../models/Route');
+const BusMaster = require('../models/BusMaster');
 
-// @desc    Get all routes
-// @route   GET /api/routes
+// @desc    Get all buses
+// @route   GET /api/bus-master
 // @access  Public
-exports.getAllRoutes = async (req, res) => {
+exports.getAllBuses = async (req, res) => {
   try {
-    const routes = await Route.find({ isActive: true });
+    const buses = await BusMaster.find({ isActive: true });
 
     res.status(200).json({
       success: true,
-      count: routes.length,
-      data: routes
+      count: buses.length,
+      data: buses
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Server error'
-    });
-  }
-};
-
-// @desc    Create new route
-// @route   POST /api/routes
-// @access  Private/Admin
-exports.createRoute = async (req, res) => {
-  try {
-    const route = await Route.create(req.body);
-
-    res.status(201).json({
-      success: true,
-      data: route
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: 'Failed to create route',
+      message: 'Server error',
       error: error.message
     });
   }
 };
 
-// @desc    Update route
-// @route   PUT /api/routes/:id
+// @desc    Create new bus
+// @route   POST /api/bus-master
 // @access  Private/Admin
-exports.updateRoute = async (req, res) => {
+exports.createBus = async (req, res) => {
   try {
-    const route = await Route.findByIdAndUpdate(
+    const bus = await BusMaster.create(req.body);
+
+    res.status(201).json({
+      success: true,
+      data: bus
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: 'Failed to create bus',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Update bus
+// @route   PUT /api/bus-master/:id
+// @access  Private/Admin
+exports.updateBus = async (req, res) => {
+  try {
+    const bus = await BusMaster.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true, runValidators: true }
     );
 
-    if (!route) {
+    if (!bus) {
       return res.status(404).json({
         success: false,
-        message: 'Route not found'
+        message: 'Bus not found'
       });
     }
 
     res.status(200).json({
       success: true,
-      data: route
+      data: bus
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      message: 'Failed to update route',
+      message: 'Failed to update bus',
       error: error.message
     });
   }
 };
 
-// @desc    Delete route (soft delete)
-// @route   DELETE /api/routes/:id
+// @desc    Delete bus (soft delete)
+// @route   DELETE /api/bus-master/:id
 // @access  Private/Admin
-exports.deleteRoute = async (req, res) => {
+exports.deleteBus = async (req, res) => {
   try {
-    const route = await Route.findByIdAndUpdate(
+    const bus = await BusMaster.findByIdAndUpdate(
       req.params.id,
       { isActive: false },
       { new: true }
     );
 
-    if (!route) {
+    if (!bus) {
       return res.status(404).json({
         success: false,
-        message: 'Route not found'
+        message: 'Bus not found'
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Route deleted successfully'
+      message: 'Bus deleted successfully'
     });
   } catch (error) {
     res.status(500).json({

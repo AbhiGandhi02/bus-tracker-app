@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const connectDB = require('./config/db');
+const admin = require('firebase-admin');
 
 // Load env vars
 dotenv.config();
@@ -11,10 +12,17 @@ dotenv.config();
 // Connect to database
 connectDB();
 
+// Initialize Firebase Admin
+const serviceAccount = require('./config/serviceAccountKey.json');
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
 // Route files
 const authRoutes = require('./routes/auth');
-const busRoutes = require('./routes/buses');
+const busMasterRoutes = require('./routes/busMaster');
 const routeRoutes = require('./routes/routes');
+const scheduledRideRoutes = require('./routes/scheduledRide');
 
 const app = express();
 
@@ -45,14 +53,14 @@ app.set('io', io);
 io.on('connection', (socket) => {
   console.log(`✅ Client connected: ${socket.id}`);
 
-  socket.on('subscribe-bus', (busId) => {
-    socket.join(`bus-${busId}`);
-    console.log(`📍 Client ${socket.id} subscribed to bus ${busId}`);
+  socket.on('subscribe-ride', (rideId) => {
+    socket.join(`ride-${rideId}`);
+    console.log(`📍 Client ${socket.id} subscribed to ride ${rideId}`);
   });
 
-  socket.on('unsubscribe-bus', (busId) => {
-    socket.leave(`bus-${busId}`);
-    console.log(`📍 Client ${socket.id} unsubscribed from bus ${busId}`);
+  socket.on('unsubscribe-ride', (rideId) => {
+    socket.leave(`ride-${rideId}`);
+    console.log(`📍 Client ${socket.id} unsubscribed from ride ${rideId}`);
   });
 
   socket.on('disconnect', () => {
@@ -62,18 +70,20 @@ io.on('connection', (socket) => {
 
 // Mount routes
 app.use('/api/auth', authRoutes);
-app.use('/api/buses', busRoutes);
+app.use('/api/bus-master', busMasterRoutes);
 app.use('/api/routes', routeRoutes);
+app.use('/api/scheduled-rides', scheduledRideRoutes);
 
 // Root route
 app.get('/', (req, res) => {
   res.json({
-    message: '🚌 Bus Tracking API',
-    version: '1.0.0',
+    message: '🚌 Bus Tracking API v2.0',
+    version: '2.0.0',
     endpoints: {
       auth: '/api/auth',
-      buses: '/api/buses',
-      routes: '/api/routes'
+      busMaster: '/api/bus-master',
+      routes: '/api/routes',
+      scheduledRides: '/api/scheduled-rides'
     }
   });
 });
@@ -83,4 +93,5 @@ const PORT = process.env.PORT || 5000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🔌 WebSocket server ready`);
+  console.log(`🔥 Firebase Admin initialized`);
 });

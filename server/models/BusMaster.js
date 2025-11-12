@@ -1,30 +1,19 @@
 const mongoose = require('mongoose');
 
-const routeSchema = new mongoose.Schema({
-  routeNumber: {
+const busMasterSchema = new mongoose.Schema({
+  busNumber: {
     type: String,
     required: true,
     unique: true,
     trim: true
   },
-  routeName: {
+  busType: {
     type: String,
-    required: true,
-    trim: true
+    enum: ['AC', 'Non-AC', 'Mini', 'Deluxe'],
+    default: 'Non-AC'
   },
-  departureLocation: {
+  driverName: {
     type: String,
-    required: true,
-    trim: true
-  },
-  arrivalLocation: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  rideTime: {
-    type: String,
-    required: true,
     trim: true
   },
   isActive: {
@@ -41,9 +30,10 @@ const routeSchema = new mongoose.Schema({
   }
 });
 
-routeSchema.pre('save', function(next) {
+// Update timestamp on save
+busMasterSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   next();
 });
 
-module.exports = mongoose.model('Route', routeSchema);
+module.exports = mongoose.model('BusMaster', busMasterSchema);

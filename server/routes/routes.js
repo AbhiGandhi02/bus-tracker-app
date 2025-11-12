@@ -2,20 +2,18 @@ const express = require('express');
 const router = express.Router();
 const {
   getAllRoutes,
-  getRoute,
   createRoute,
   updateRoute,
   deleteRoute
 } = require('../controllers/routeController');
-const { protect, authorize } = require('../middleware/auth');
+const { verifyFirebaseToken, requireAdmin } = require('../middleware/firebaseAuth');
 
 router.route('/')
   .get(getAllRoutes)
-  .post(protect, authorize('admin'), createRoute);
+  .post(verifyFirebaseToken, requireAdmin, createRoute);
 
 router.route('/:id')
-  .get(getRoute)
-  .put(protect, authorize('admin'), updateRoute)
-  .delete(protect, authorize('admin'), deleteRoute);
+  .put(verifyFirebaseToken, requireAdmin, updateRoute)
+  .delete(verifyFirebaseToken, requireAdmin, deleteRoute);
 
 module.exports = router;
