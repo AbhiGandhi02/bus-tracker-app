@@ -23,6 +23,7 @@ const authRoutes = require('./routes/auth');
 const busMasterRoutes = require('./routes/busMaster');
 const routeRoutes = require('./routes/routes');
 const scheduledRideRoutes = require('./routes/scheduledRide');
+const userRoutes = require('./routes/user');
 
 const app = express();
 
@@ -73,6 +74,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/bus-master', busMasterRoutes);
 app.use('/api/routes', routeRoutes);
 app.use('/api/scheduled-rides', scheduledRideRoutes);
+app.use('/api/users', userRoutes);
 
 // Root route
 app.get('/', (req, res) => {
@@ -83,7 +85,8 @@ app.get('/', (req, res) => {
       auth: '/api/auth',
       busMaster: '/api/bus-master',
       routes: '/api/routes',
-      scheduledRides: '/api/scheduled-rides'
+      scheduledRides: '/api/scheduled-rides',
+      users: '/api/users'
     }
   });
 });

@@ -22,14 +22,14 @@ const getToday = (): Date => {
   today.setHours(0, 0, 0, 0);
   return today;
 };
+
 const formatDateForQuery = (date: Date | string): string => {
   const d = new Date(date);
-  const year = d.getFullYear();
-  const month = (d.getMonth() + 1).toString().padStart(2, '0');
-  const day = d.getDate().toString().padStart(2, '0');
+  const year = d.getFullYear(); // local year
+  const month = (d.getMonth() + 1).toString().padStart(2, '0'); // local month
+  const day = d.getDate().toString().padStart(2, '0'); // local day
   return `${year}-${month}-${day}`;
 };
-// --- End Helper Functions ---
 
 
 const MapOverlay: React.FC<{ status: string, departureTime: string }> = ({ status, departureTime }) => {

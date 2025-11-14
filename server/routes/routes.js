@@ -6,14 +6,14 @@ const {
   updateRoute,
   deleteRoute
 } = require('../controllers/routeController');
-const { verifyFirebaseToken, requireAdmin } = require('../middleware/firebaseAuth');
+const { verifyFirebaseToken, requirePlanner } = require('../middleware/firebaseAuth');
 
 router.route('/')
   .get(getAllRoutes)
-  .post(verifyFirebaseToken, requireAdmin, createRoute);
+  .post(verifyFirebaseToken, requirePlanner, createRoute);
 
 router.route('/:id')
-  .put(verifyFirebaseToken, requireAdmin, updateRoute)
-  .delete(verifyFirebaseToken, requireAdmin, deleteRoute);
+  .put(verifyFirebaseToken, requirePlanner, updateRoute)
+  .delete(verifyFirebaseToken, requirePlanner, deleteRoute);
 
 module.exports = router;

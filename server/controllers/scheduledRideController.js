@@ -40,7 +40,7 @@ exports.getScheduledRides = async (req, res) => {
 
 // @desc    Create scheduled ride
 // @route   POST /api/scheduled-rides
-// @access  Private/Admin
+// @access  Private (Planner: MasterAdmin/Admin)
 exports.createScheduledRide = async (req, res) => {
   try {
     const ride = await ScheduledRide.create(req.body);
@@ -61,9 +61,9 @@ exports.createScheduledRide = async (req, res) => {
   }
 };
 
-// @desc    Update scheduled ride
+// @desc    Update scheduled ride (Status)
 // @route   PUT /api/scheduled-rides/:id
-// @access  Private/Admin
+// @access  Private (Operator: MasterAdmin/Driver)
 exports.updateScheduledRide = async (req, res) => {
   try {
     const ride = await ScheduledRide.findByIdAndUpdate(
@@ -81,7 +81,6 @@ exports.updateScheduledRide = async (req, res) => {
       });
     }
 
-    // --- NEW CHANGE ---
     // Broadcast this status update to all connected clients
     if (req.app.get('io') && req.body.status) {
       req.app.get('io').emit('ride-status-update', {
@@ -90,7 +89,6 @@ exports.updateScheduledRide = async (req, res) => {
       });
       console.log(`[Socket] Emitted ride-status-update for ${ride._id}: ${ride.status}`);
     }
-    // --- END OF CHANGE ---
 
     res.status(200).json({
       success: true,
@@ -107,7 +105,7 @@ exports.updateScheduledRide = async (req, res) => {
 
 // @desc    Update ride location (real-time tracking)
 // @route   POST /api/scheduled-rides/:id/location
-// @access  Public (for GPS device)
+// @access  Private (Operator: MasterAdmin/Driver)
 exports.updateRideLocation = async (req, res) => {
   try {
     const { lat, lng } = req.body;
@@ -115,6 +113,7 @@ exports.updateRideLocation = async (req, res) => {
     const ride = await ScheduledRide.findById(req.params.id);
 
     if (!ride) {
+      // Corrected status code from 4404 to 404
       return res.status(404).json({
         success: false,
         message: 'Ride not found'
@@ -126,28 +125,32 @@ exports.updateRideLocation = async (req, res) => {
       lng: parseFloat(lng),
       timestamp: Date.now()
     };
-    
-    // Also update status to 'In Progress' if location is sent
-    // and the ride was 'Scheduled'.
-    if (ride.status === 'Scheduled') {
-      ride.status = 'In Progress';
-      // Emit status change as well
-      if (req.app.get('io')) {
-        req.app.get('io').emit('ride-status-update', {
-          rideId: ride._id,
-          status: ride.status
-        });
-        console.log(`[Socket] Emitted ride-status-update (auto) for ${ride._id}: ${ride.status}`);
-      }
-    }
+
 
     await ride.save();
 
     // Emit socket event for location
     if (req.app.get('io')) {
+      // --- FIX for busNumber ---
+      let busNumber = '...';
+      try {
+        const populatedRide = await ScheduledRide.findById(ride._id).populate('busId');
+        
+        // --- THIS IS THE FIX ---
+        // Changed `(populatedRide.busId as any).busNumber` to standard JavaScript
+        if (populatedRide && populatedRide.busId && populatedRide.busId.busNumber) {
+          busNumber = populatedRide.busId.busNumber;
+        }
+        // --- END OF FIX ---
+
+      } catch (e) {
+        console.warn("Could not populate busNumber for socket event");
+      }
+      // --- END FIX ---
+      
       req.app.get('io').emit('ride-location-update', {
         rideId: ride._id,
-        busNumber: ride.busId?.busNumber, // busId might not be populated here
+        busNumber: busNumber, // Send the correct bus number
         location: ride.currentLocation
       });
     }
@@ -167,7 +170,7 @@ exports.updateRideLocation = async (req, res) => {
 
 // @desc    Delete scheduled ride
 // @route   DELETE /api/scheduled-rides/:id
-// @access  Private/Admin
+// @access  Private (Planner: MasterAdmin/Admin)
 exports.deleteScheduledRide = async (req, res) => {
   try {
     const ride = await ScheduledRide.findByIdAndDelete(req.params.id);

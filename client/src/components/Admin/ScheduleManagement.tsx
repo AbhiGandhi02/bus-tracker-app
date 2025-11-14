@@ -3,8 +3,10 @@ import { ScheduledRide, BusMaster, Route, ScheduledRideInput, RideStatus } from 
 import Button from '../common/Button';
 import Input from '../common/Input';
 import { scheduledRideAPI } from '../../services/api';
-// --- NEW: Import useNavigate ---
+// --- MODIFICATION: Import useNavigate and useAuth ---
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+// --- END MODIFICATION ---
 
 interface Props {
   rides: ScheduledRide[];
@@ -14,20 +16,15 @@ interface Props {
   onUpdate: () => void;
   onDateChange: (date: string) => void;
   isToday: boolean;
-  
-  // --- REMOVED: onRideSelect and selectedRideId props ---
 }
 
-// --- FIX: Helper to format date string consistently using UTC ---
 const formatDateForQuery = (date: Date | string): string => {
   const d = new Date(date);
-  // Use UTC dates to avoid timezone shift
-  const year = d.getUTCFullYear();
-  const month = (d.getUTCMonth() + 1).toString().padStart(2, '0');
-  const day = d.getUTCDate().toString().padStart(2, '0');
+  const year = d.getFullYear();
+  const month = (d.getMonth() + 1).toString().padStart(2, '0');
+  const day = d.getDate().toString().padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
-// --- END FIX ---
 
 const ScheduleManagement: React.FC<Props> = ({ 
   rides, buses, routes, selectedDate, onUpdate, onDateChange, isToday
@@ -45,17 +42,18 @@ const ScheduleManagement: React.FC<Props> = ({
   const [quickActionLoading, setQuickActionLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
   
-  // --- NEW: Add useNavigate hook ---
+  // --- MODIFICATION: Get hooks ---
   const navigate = useNavigate();
+  const { isPlanner, isOperator } = useAuth();
+  // --- END MODIFICATION ---
 
   const handleOpenModal = (e: React.MouseEvent, ride?: ScheduledRide) => {
-    e.stopPropagation(); // Stop click from bubbling to the row
+    e.stopPropagation(); 
     if (ride) {
       setEditingRide(ride);
       setFormData({
         busId: typeof ride.busId === 'object' ? ride.busId._id : ride.busId,
         routeId: typeof ride.routeId === 'object' ? ride.routeId._id : ride.routeId,
-        // Use UTC formatter here too
         date: formatDateForQuery(ride.date),
         departureTime: ride.departureTime,
         status: ride.status,
@@ -100,7 +98,7 @@ const ScheduleManagement: React.FC<Props> = ({
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation(); // Stop click from bubbling to the row
+    e.stopPropagation();
     if (!window.confirm('Are you sure you want to delete this scheduled ride?')) return;
     try {
       await scheduledRideAPI.delete(id);
@@ -110,12 +108,21 @@ const ScheduleManagement: React.FC<Props> = ({
     }
   };
 
+  // --- MODIFICATION: Add redirect logic ---
   const handleQuickStatusChange = async (e: React.MouseEvent, ride: ScheduledRide, newStatus: RideStatus) => {
-    e.stopPropagation(); // Stop click from bubbling to the row
+    e.stopPropagation();
     setQuickActionLoading(ride._id);
     try {
       await scheduledRideAPI.update(ride._id, { status: newStatus });
       onUpdate();
+
+      // --- THIS IS THE REDIRECT ---
+      // If we just started the ride, navigate to the driver dashboard
+      if (newStatus === 'In Progress') {
+        navigate(`/driver?rideId=${ride._id}`);
+      }
+      // --- END REDIRECT ---
+
     } catch (err) {
       console.error("Failed to update status", err);
       alert('Failed to update status');
@@ -123,15 +130,12 @@ const ScheduleManagement: React.FC<Props> = ({
       setQuickActionLoading(null);
     }
   };
+  // --- END MODIFICATION ---
 
-  // --- NEW: Row click handler ---
   const handleRowClick = (ride: ScheduledRide) => {
-    // --- FIX: Use UTC formatter for navigation ---
     const dateString = formatDateForQuery(ride.date);
-    // --- END FIX ---
     navigate(`/admin/track/${ride._id}?date=${dateString}`);
   };
-  // --- END NEW ---
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -156,7 +160,12 @@ const ScheduleManagement: React.FC<Props> = ({
             className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 border px-3 py-2"
           />
         </div>
-        <Button onClick={(e) => handleOpenModal(e)}>+ Schedule New Ride</Button>
+        
+        {/* --- MODIFICATION: Hide button if not a Planner --- */}
+        {isPlanner() && (
+          <Button onClick={(e) => handleOpenModal(e)}>+ Schedule New Ride</Button>
+        )}
+        {/* --- END MODIFICATION --- */}
       </div>
 
       {/* Rides Table */}
@@ -177,14 +186,11 @@ const ScheduleManagement: React.FC<Props> = ({
               const route = ride.routeId as Route;
               
               return (
-                // --- MODIFIED: Added onClick and hover state ---
                 <tr 
                   key={ride._id}
                   onClick={() => handleRowClick(ride)}
                   className="cursor-pointer hover:bg-gray-50"
                 >
-                {/* --- END MODIFICATION --- */}
-
                   <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{ride.departureTime}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
                     <div className="text-sm font-medium text-gray-900">{route?.routeNumber}</div>
@@ -200,9 +206,10 @@ const ScheduleManagement: React.FC<Props> = ({
                     </span>
                   </td>
                   
-                  {/* --- MODIFIED: Added stopPropagation to all buttons --- */}
+                  {/* --- MODIFICATION: Hide buttons based on role --- */}
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                    {ride.status === 'Scheduled' && (
+                    {/* Only Operators can see Start/Complete */}
+                    {isOperator() && ride.status === 'Scheduled' && (
                       <Button
                         variant="secondary"
                         className="text-xs py-1 px-2 !bg-green-100 !text-green-700 hover:!bg-green-200"
@@ -214,8 +221,8 @@ const ScheduleManagement: React.FC<Props> = ({
                         Start Ride
                       </Button>
                     )}
-                    {ride.status === 'In Progress' && (
-                       <Button
+                    {isOperator() && ride.status === 'In Progress' && (
+                        <Button
                         variant="secondary"
                         className="text-xs py-1 px-2 !bg-gray-100 !text-gray-700 hover:!bg-gray-200"
                         onClick={(e) => handleQuickStatusChange(e, ride, 'Completed')}
@@ -226,18 +233,24 @@ const ScheduleManagement: React.FC<Props> = ({
                         Complete
                       </Button>
                     )}
-                    <button 
-                      onClick={(e) => handleOpenModal(e, ride)} 
-                      className="text-indigo-600 hover:text-indigo-900"
-                    >
-                      Edit
-                    </button>
-                    <button 
-                      onClick={(e) => handleDelete(e, ride._id)} 
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      Delete
-                    </button>
+
+                    {/* Only Planners can see Edit/Delete */}
+                    {isPlanner() && (
+                      <>
+                        <button 
+                          onClick={(e) => handleOpenModal(e, ride)} 
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          Edit
+                        </button>
+                        <button 
+                          onClick={(e) => handleDelete(e, ride._id)} 
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
                   </td>
                   {/* --- END MODIFICATION --- */}
                 </tr>
@@ -252,8 +265,8 @@ const ScheduleManagement: React.FC<Props> = ({
         </table>
       </div>
 
-      {/* Modal */}
-      {isModalOpen && (
+      {/* Modal - Only show if isPlanner */}
+      {isPlanner() && isModalOpen && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-medium mb-4">{editingRide ? 'Edit Schedule' : 'Add New Schedule'}</h3>
@@ -264,9 +277,7 @@ const ScheduleManagement: React.FC<Props> = ({
                 label="Date"
                 required
                 value={formData.date as string}
-                // --- THIS IS THE FIX ---
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                // --- END OF FIX ---
                 disabled={!!editingRide}
               />
               <Input
@@ -313,7 +324,7 @@ const ScheduleManagement: React.FC<Props> = ({
                   <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                   <select
                     className={`mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border
-                                ${!isToday ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                          ${!isToday ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as RideStatus })}
                     disabled={!isToday}

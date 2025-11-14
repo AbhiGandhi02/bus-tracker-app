@@ -6,8 +6,9 @@ import {
   User as FirebaseUser 
 } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
-import { User, AuthContextType } from '../types'; // Removed ApiResponse from imports here
+import { User, AuthContextType } from '../types';
 import axios from 'axios';
+import config from '../config'; // Import config
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -23,7 +24,6 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Specific response type for auth endpoints that don't use the 'data' field
 interface AuthApiResponse {
   success: boolean;
   user?: User;
@@ -35,19 +35,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
-  // Listen to Firebase auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         try {
-          // Get ID token
           const idToken = await firebaseUser.getIdToken();
           
-          // Fetch user data from our backend
-          // We use specific AuthApiResponse type here
-          const response = await axios.get<AuthApiResponse>(`${API_URL}/auth/me`, {
+          const response = await axios.get<AuthApiResponse>(`${config.API_URL}/auth/me`, {
             headers: {
               Authorization: `Bearer ${idToken}`
             }
@@ -67,13 +61,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
 
     return () => unsubscribe();
-  }, [API_URL]);
+  }, []);
 
   const signInWithGoogle = async () => {
     try {
       setError(null);
       await signInWithPopup(auth, googleProvider);
-      // onAuthStateChanged will handle the rest
       return { success: true };
     } catch (err: any) {
       const message = err.message || 'Failed to sign in with Google';
@@ -91,9 +84,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const isAdmin = () => {
-    return user?.role === 'admin';
+  // --- NEW ROLE LOGIC ---
+  const isMasterAdmin = () => {
+    return user?.role === 'masteradmin';
   };
+
+  const isPlanner = () => {
+    // Planners are 'masteradmin' OR 'admin'
+    return user?.role === 'masteradmin' || user?.role === 'admin';
+  };
+
+  const isOperator = () => {
+    // Operators are 'masteradmin' OR 'driver'
+    return user?.role === 'masteradmin' || user?.role === 'driver';
+  };
+  // --- END NEW ROLE LOGIC ---
 
   const value: AuthContextType = {
     user,
@@ -101,7 +106,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     error,
     signInWithGoogle,
     logout,
-    isAdmin
+    isMasterAdmin,
+    isPlanner,
+    isOperator
   };
 
   return (

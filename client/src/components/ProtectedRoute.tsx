@@ -5,11 +5,13 @@ import Loader from './common/Loader';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'admin' | 'user';
+  // --- MODIFICATION: Update to new, specific roles ---
+  requiredRole: 'masteradmin' | 'planner' | 'operator' | 'user' | 'manager';
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
-  const { user, loading } = useAuth();
+  // --- MODIFICATION: Get new role functions ---
+  const { user, loading, isMasterAdmin, isPlanner, isOperator } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -21,16 +23,43 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   }
 
   if (!user) {
-    // Not logged in, redirect to login page with return url
+    // Not logged in
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (requiredRole && user.role !== requiredRole) {
-    // Role mismatch. If admin is required but user is student, redirect to student home.
-    // If student is required but user is admin, redirect to admin dashboard.
-    return <Navigate to={user.role === 'admin' ? '/admin' : '/'} replace />;
+  // --- NEW ROLE LOGIC ---
+
+  // Check for 'masteradmin' (Users page)
+  if (requiredRole === 'masteradmin' && !isMasterAdmin()) {
+    return <Navigate to="/" replace />;
+  }
+  
+  // Check for 'planner' (Buses, Routes)
+  if (requiredRole === 'planner' && !isPlanner()) {
+    return <Navigate to="/" replace />;
   }
 
+  // Check for 'operator' (Driver Dashboard)
+  if (requiredRole === 'operator' && !isOperator()) {
+    return <Navigate to="/" replace />;
+  }
+
+  // Check for 'manager' (ANY admin/driver role for Schedule/Track pages)
+  if (requiredRole === 'manager' && !(isPlanner() || isOperator())) {
+    return <Navigate to="/" replace />;
+  }
+
+  // Check for 'user' (student)
+  if (requiredRole === 'user') {
+    // If any admin/driver tries to access a user-only page
+    if (isPlanner() || isOperator()) {
+      // Redirect them to the main admin schedule page
+      return <Navigate to="/admin/schedule" replace />;
+    }
+  }
+  // --- END NEW ROLE LOGIC ---
+
+  // If all checks pass, render the child component
   return <>{children}</>;
 };
 

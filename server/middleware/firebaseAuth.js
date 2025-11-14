@@ -1,12 +1,6 @@
 const admin = require('firebase-admin');
 const User = require('../models/User');
 
-// Initialize Firebase Admin (add this to server.js)
-// const serviceAccount = require('./path/to/serviceAccountKey.json');
-// admin.initializeApp({
-//   credential: admin.credential.cert(serviceAccount)
-// });
-
 // Verify Firebase ID Token
 exports.verifyFirebaseToken = async (req, res, next) => {
   try {
@@ -56,21 +50,46 @@ exports.verifyFirebaseToken = async (req, res, next) => {
   }
 };
 
-// Check if user is admin
-exports.requireAdmin = (req, res, next) => {
-  if (!req.user) {
-    return res.status(401).json({
-      success: false,
-      message: 'Authentication required'
-    });
-  }
-
-  if (req.user.role !== 'admin') {
+exports.requireMasterAdmin = (req, res, next) => {
+  if (req.user && req.user.role === 'masteradmin') {
+    next();
+  } else {
     return res.status(403).json({
       success: false,
-      message: 'Admin access required'
+      message: 'Access denied. Master Admin role required.'
     });
   }
+};
 
-  next();
+exports.requirePlanner = (req, res, next) => {
+  if (req.user && (req.user.role === 'masteradmin' || req.user.role === 'admin')) {
+    next();
+  } else {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Admin or Master Admin role required.'
+    });
+  }
+};
+
+exports.requireOperator = (req, res, next) => {
+  if (req.user && (req.user.role === 'masteradmin' || req.user.role === 'driver')) {
+    next();
+  } else {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Driver or Master Admin role required.'
+    });
+  }
+};
+
+exports.requireDriver = (req, res, next) => {
+  if (req.user && req.user.role === 'driver') {
+    next();
+  } else {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Driver role required.'
+    });
+  }
 };

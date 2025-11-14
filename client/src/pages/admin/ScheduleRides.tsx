@@ -62,23 +62,8 @@ const parseDateFromQuery = (dateQuery: string | null): Date => {
 };
 // --- END DATE HELPER FIXES ---
 
-const shouldAutoStart = (ride: ScheduledRide): boolean => {
-  if (ride.status !== 'Scheduled') return false;
-  
-  // Create the departure date/time based on local date
-  const rideDate = new Date(ride.date);
-  const year = rideDate.getFullYear();
-  const month = rideDate.getMonth();
-  const day = rideDate.getDate();
-  
-  const [hours, minutes] = ride.departureTime.split(':').map(Number);
-  
-  const departureDateTime = new Date(year, month, day, hours, minutes);
-  const now = new Date();
-  
-  // Check if it's today (local) AND the departure time is in the past
-  return isSameDay(departureDateTime, getToday()) && departureDateTime < now;
-};
+// --- 'shouldAutoStart' function removed ---
+// --- 'autoStartScheduledRides' function removed ---
 
 
 const ScheduleRides: React.FC = () => {
@@ -95,7 +80,8 @@ const ScheduleRides: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { socket } = useSocket();
-  const autoStartRef = useRef(false);
+  
+  // --- autoStartRef removed ---
   
   const [isToday, setIsToday] = useState(isSameDay(selectedDate, getToday()));
 
@@ -103,33 +89,14 @@ const ScheduleRides: React.FC = () => {
     setIsToday(isSameDay(selectedDate, getToday()));
   }, [selectedDate]);
 
-  const autoStartScheduledRides = (currentRides: ScheduledRide[]) => {
-    if (autoStartRef.current || !isToday) return;
-    autoStartRef.current = true;
-    
-    const ridesToStart = currentRides.filter(shouldAutoStart);
-    
-    if (ridesToStart.length > 0) {
-      console.log(`[Auto-Start] Found ${ridesToStart.length} rides to start...`);
-      Promise.all(ridesToStart.map(ride => 
-        scheduledRideAPI.update(ride._id, { status: 'In Progress' })
-      )).then(() => {
-        console.log('[Auto-Start] Rides successfully updated.');
-        fetchData(); 
-      }).catch(err => {
-        console.error('[Auto-Start] Error updating rides:', err);
-      }).finally(() => {
-        autoStartRef.current = false;
-      });
-    }
-  };
+  // --- 'autoStartScheduledRides' logic removed ---
 
   const fetchData = useCallback(async () => {
     try {
       if (rides.length === 0) {
          setLoading(true);
       }
-      autoStartRef.current = false; 
+      // --- autoStartRef reset removed ---
       
       const dateString = formatDateForAPI(selectedDate);
       setSearchParams({ date: dateString });
@@ -145,7 +112,7 @@ const ScheduleRides: React.FC = () => {
       
       if (ridesRes.data.success && ridesRes.data.data) {
         setRides(ridesRes.data.data);
-        autoStartScheduledRides(ridesRes.data.data);
+        // --- Call to autoStartScheduledRides removed ---
       } else {
         setRides([]);
       }
@@ -156,7 +123,7 @@ const ScheduleRides: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedDate, setSearchParams]); 
+  }, [selectedDate, setSearchParams]); // 'rides.length' removed from dependencies
 
   useEffect(() => {
     fetchData();

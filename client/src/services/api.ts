@@ -1,16 +1,14 @@
-// src/services/api.ts
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { 
   BusMaster, Route, ScheduledRide,
   BusMasterInput, RouteInput, ScheduledRideInput,
-  RideLocation, ApiResponse 
+  RideLocation, ApiResponse, User 
 } from '../types';
 import { auth } from '../config/firebase';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import config from '../config'; // Import config for API_URL
 
 const api: AxiosInstance = axios.create({
-  baseURL: API_URL,
+  baseURL: config.API_URL, // Use API_URL from config
   headers: {
     'Content-Type': 'application/json'
   }
@@ -43,9 +41,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Unauthorized - could redirect to login, or let AuthContext handle it
-      // window.location.href = '/login'; // Optional: might be better handled by react-router
-      console.warn("Unauthorized API call");
+      console.warn("Unauthorized API call. Token might be expired or invalid.");
+      // We don't redirect here, we let ProtectedRoute handle it.
     }
     return Promise.reject(error);
   }
@@ -53,7 +50,7 @@ api.interceptors.response.use(
 
 // Auth API
 export const authAPI = {
-  getMe: () => api.get<ApiResponse<any>>('/auth/me'),
+  getMe: () => api.get<ApiResponse<{user: User}>>('/auth/me'),
   setAdmin: (email: string) => api.post<ApiResponse<any>>('/auth/set-admin', { email })
 };
 
@@ -80,6 +77,13 @@ export const scheduledRideAPI = {
   update: (id: string, data: Partial<ScheduledRideInput>) => api.put<ApiResponse<ScheduledRide>>(`/scheduled-rides/${id}`, data),
   updateLocation: (id: string, location: RideLocation) => api.post<ApiResponse<ScheduledRide>>(`/scheduled-rides/${id}/location`, location),
   delete: (id: string) => api.delete<ApiResponse<null>>(`/scheduled-rides/${id}`)
+};
+
+// User Management API ---
+export const userAPI = {
+  getAll: () => api.get<ApiResponse<User[]>>('/users'),
+  updateRole: (id: string, role: 'user' | 'admin' | 'driver') => 
+    api.put<ApiResponse<User>>(`/users/${id}/role`, { role })
 };
 
 export default api;

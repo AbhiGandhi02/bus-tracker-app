@@ -9,7 +9,7 @@ export interface User {
   name: string;
   email: string;
   photoURL?: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'driver' | 'masteradmin';
   createdAt?: Date;
   lastLogin?: Date;
 }
@@ -20,7 +20,9 @@ export interface AuthContextType {
   error: string | null;
   signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
-  isAdmin: () => boolean;
+  isMasterAdmin: () => boolean; // For 'masteradmin' only
+  isPlanner: () => boolean;        // For 'masteradmin' OR 'admin'
+  isOperator: () => boolean; // For 'masteradmin', 'admin', OR 'driver'
 }
 
 // ==========================================
@@ -154,9 +156,7 @@ export interface RideLocationUpdate {
   location: RideLocation;
 }
 
-// --- NEW TYPE ---
 export interface RideStatusUpdate {
   rideId: string;
   status: RideStatus;
 }
-// --- END NEW TYPE ---

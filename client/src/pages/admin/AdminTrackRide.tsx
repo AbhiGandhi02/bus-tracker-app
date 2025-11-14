@@ -25,13 +25,11 @@ const getToday = (): Date => {
 // --- FIX: Helper to format date string consistently using UTC ---
 const formatDateForQuery = (date: Date | string): string => {
   const d = new Date(date);
-  // Use UTC dates to avoid timezone shift
-  const year = d.getUTCFullYear();
-  const month = (d.getUTCMonth() + 1).toString().padStart(2, '0');
-  const day = d.getUTCDate().toString().padStart(2, '0');
+  const year = d.getFullYear(); // local year
+  const month = (d.getMonth() + 1).toString().padStart(2, '0'); // local month
+  const day = d.getDate().toString().padStart(2, '0'); // local day
   return `${year}-${month}-${day}`;
 };
-// --- END FIX ---
 // --- End Helper Functions ---
 
 const MapOverlay: React.FC<{ status: string, departureTime: string }> = ({ status, departureTime }) => {

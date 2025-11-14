@@ -1,24 +1,33 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+// --- MODIFICATION: Import new role functions ---
 import { useAuth } from './context/AuthContext';
+// --- END MODIFICATION ---
 import ProtectedRoute from './components/ProtectedRoute';
 import Loader from './components/common/Loader';
-import AdminTrackRide from './pages/admin/TrackRide';
+import AdminTrackRide from './pages/admin/AdminTrackRide';
 
 // Auth Pages
-import LoginPage from './pages/auth/Login';
+import Login from './pages/auth/Login';
 
 // Admin Pages
 import ManageBuses from './pages/admin/ManageBuses';
 import ManageRoutes from './pages/admin/ManageRoutes';
 import ScheduleRides from './pages/admin/ScheduleRides';
+import ManageUsers from './pages/admin/ManageUsers';
 
 // Student Pages
 import ViewSchedule from './pages/student/ViewSchedule';
 import TrackRide from './pages/student/TrackRide';
 
+// Driver Page
+import DriverDashboard from './pages/driver/DriverDashboard';
+
+
 const App: React.FC = () => {
-  const { user, loading } = useAuth();
+  // --- MODIFICATION: Get new functions ---
+  const { user, loading, isPlanner, isOperator } = useAuth();
+  // --- END MODIFICATION ---
 
   if (loading) {
     return <div className="h-screen flex items-center justify-center"><Loader size="lg" /></div>;
@@ -27,54 +36,104 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Routes>
-        {/* Public Routes */}
-        <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" />} />
-
-        {/* Admin Routes */}
-        <Route path="/admin" element={
-          <ProtectedRoute requiredRole="admin">
-             <Navigate to="/admin/schedule" replace />
-          </ProtectedRoute>
-        } />
-        <Route path="/admin/buses" element={
-          <ProtectedRoute requiredRole="admin">
-            <ManageBuses />
-          </ProtectedRoute>
-        } />
-         <Route path="/admin/routes" element={
-          <ProtectedRoute requiredRole="admin">
-            <ManageRoutes />
-          </ProtectedRoute>
-        } />
-         <Route path="/admin/schedule" element={
-          <ProtectedRoute requiredRole="admin">
-            <ScheduleRides />
-          </ProtectedRoute>
-        } />
-
+        
+        <Route
+          path="/login"
+          element={!user ? <Login /> : <Navigate to="/" replace />}
+        />
+        
+        <Route
+          path="/admin"
+          element={
+            // --- MODIFICATION: Use 'manager' role ---
+            <ProtectedRoute requiredRole="manager"> 
+              <Navigate to="/admin/schedule" replace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/buses"
+          element={
+            // --- MODIFICATION: Use 'planner' role ---
+            <ProtectedRoute requiredRole="planner">
+              <ManageBuses />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/routes"
+          element={
+            // --- MODIFICATION: Use 'planner' role ---
+            <ProtectedRoute requiredRole="planner">
+              <ManageRoutes />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/schedule"
+          element={
+            // --- MODIFICATION: Use 'manager' role ---
+            <ProtectedRoute requiredRole="manager">
+              <ScheduleRides />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/admin/track/:rideId"
           element={
-            <ProtectedRoute requiredRole="admin">
+            // --- MODIFICATION: Use 'manager' role ---
+            <ProtectedRoute requiredRole="manager">
               <AdminTrackRide />
             </ProtectedRoute>
           }
         />
+        
+        <Route
+          path="/admin/users"
+          element={
+            // --- MODIFICATION: Use 'masteradmin' role ---
+            <ProtectedRoute requiredRole="masteradmin">
+              <ManageUsers />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Student Routes */}
-        <Route path="/" element={
-          <ProtectedRoute requiredRole="user">
-             {user?.role === 'admin' ? <Navigate to="/admin" /> : <ViewSchedule />}
-          </ProtectedRoute>
-        } />
-        <Route path="/track/:rideId" element={
-          <ProtectedRoute requiredRole="user">
-            <TrackRide />
-          </ProtectedRoute>
-        } />
+        <Route
+          path="/driver"
+          element={
+            // --- MODIFICATION: Use 'operator' role ---
+            <ProtectedRoute requiredRole="operator">
+              <DriverDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Catch all */}
+        <Route
+          path="/"
+          element={
+            // --- MODIFICATION: Use 'user' role ---
+            <ProtectedRoute requiredRole="user">
+              {/* --- MODIFICATION: Use new functions for redirect --- */}
+              {(isPlanner() || isOperator()) ? (
+                <Navigate to="/admin/schedule" replace />
+              ) : (
+                <ViewSchedule />
+              )}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/track/:rideId"
+          element={
+            // --- MODIFICATION: Use 'user' role ---
+            <ProtectedRoute requiredRole="user">
+              <TrackRide />
+            </ProtectedRoute>
+          }
+        />
+
         <Route path="*" element={<Navigate to="/" replace />} />
+
       </Routes>
     </div>
   );

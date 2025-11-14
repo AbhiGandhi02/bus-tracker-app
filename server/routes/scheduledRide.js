@@ -6,17 +6,29 @@ const {
   updateScheduledRide,
   updateRideLocation,
   deleteScheduledRide
-} = require('../controllers/scheduledRideController');
-const { verifyFirebaseToken, requireAdmin } = require('../middleware/firebaseAuth');
+} = require('../controllers/scheduledRideController'); // Using your 'schedulrRideController.js' file
+
+
+const { 
+  verifyFirebaseToken, 
+  requirePlanner,     
+  requireOperator     
+} = require('../middleware/firebaseAuth');
 
 router.route('/')
-  .get(getScheduledRides)
-  .post(verifyFirebaseToken, requireAdmin, createScheduledRide);
+  .get(getScheduledRides) 
+  .post(verifyFirebaseToken, requirePlanner, createScheduledRide);
 
 router.route('/:id')
-  .put(verifyFirebaseToken, requireAdmin, updateScheduledRide)
-  .delete(verifyFirebaseToken, requireAdmin, deleteScheduledRide);
+  .put(verifyFirebaseToken, requireOperator, updateScheduledRide)
+  .delete(verifyFirebaseToken, requirePlanner, deleteScheduledRide);
 
-router.post('/:id/location', updateRideLocation);
+
+router.post(
+  '/:id/location', 
+  verifyFirebaseToken, 
+  requireOperator,   
+  updateRideLocation 
+);
 
 module.exports = router;
