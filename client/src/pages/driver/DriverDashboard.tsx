@@ -1,11 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { ScheduledRide, BusMaster, Route, RideLocation } from '../../types';
 import { scheduledRideAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import Loader from '../../components/common/Loader';
 import Button from '../../components/common/Button';
 import { MapPin, PlayCircle, StopCircle, LogOut } from 'lucide-react';
-// --- MODIFICATION: Import useSearchParams ---
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 // Helper to format date
@@ -20,9 +19,7 @@ const getTodayString = (): string => {
 const DriverDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  // --- MODIFICATION: Initialize searchParams ---
   const [searchParams] = useSearchParams();
-
   const [rides, setRides] = useState<ScheduledRide[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,10 +27,11 @@ const DriverDashboard: React.FC = () => {
   const [trackingRideId, setTrackingRideId] = useState<string | null>(null);
   const [lastLocation, setLastLocation] = useState<RideLocation | null>(null);
   
+  // Ref to store the watchPosition ID
   const watchIdRef = useRef<number | null>(null);
 
   // Fetch only 'In Progress' or 'Scheduled' rides for today
-  const fetchRides = async () => {
+  const fetchRides = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -41,6 +39,7 @@ const DriverDashboard: React.FC = () => {
       const response = await scheduledRideAPI.getByDate(today);
 
       if (response.data.success && response.data.data) {
+        // Filter for rides that the driver can actually track
         const trackableRides = response.data.data.filter(
           ride => ride.status === 'In Progress' || ride.status === 'Scheduled'
         );
@@ -53,21 +52,31 @@ const DriverDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Empty dependency array is correct here
 
   useEffect(() => {
     fetchRides();
-  }, []);
+  }, [fetchRides]); // Use the callback function
 
-  // --- Geolocation Logic ---
+  // Wrap stopTracking in useCallback
+  const stopTracking = useCallback(() => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    setTrackingRideId(null);
+    setLastLocation(null);
+  }, []); // State setters and refs don't need to be dependencies
 
-  const startTracking = (rideId: string) => {
+  // Wrap startTracking in useCallback
+  const startTracking = useCallback((rideId: string) => {
     if (watchIdRef.current !== null) {
       stopTracking();
     }
 
     setTrackingRideId(rideId);
     
+    // Check if geolocation is available
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by your browser.');
       return;
@@ -89,8 +98,10 @@ const DriverDashboard: React.FC = () => {
       
       setLastLocation(newLocation);
       
+      // Send to backend
       scheduledRideAPI.updateLocation(rideId, newLocation)
         .catch(err => {
+          // Non-fatal error, log it
           console.error("Failed to send location update:", err);
           setError("Failed to send location update. Check connection.");
         });
@@ -99,16 +110,18 @@ const DriverDashboard: React.FC = () => {
     const onError = (err: GeolocationPositionError) => {
       console.error(`Geolocation error (${err.code}): ${err.message}`);
       setError(`Geolocation error: ${err.message}. Please enable location permissions.`);
-      stopTracking();
+      stopTracking(); // Stop if there's an error
     };
 
+    // Start watching position
     watchIdRef.current = navigator.geolocation.watchPosition(onSuccess, onError, options);
     
+    // Also mark the ride as 'In Progress' via API immediately
     scheduledRideAPI.update(rideId, { status: 'In Progress' })
       .then(() => fetchRides()); // Refresh list
-  };
-  
-  // --- MODIFICATION: Auto-start tracking if rideId is in URL ---
+  }, [stopTracking, fetchRides]); // Add dependencies
+
+  // Auto-start tracking useEffect
   useEffect(() => {
     const rideIdFromUrl = searchParams.get('rideId');
     if (rideIdFromUrl) {
@@ -117,20 +130,11 @@ const DriverDashboard: React.FC = () => {
          startTracking(rideIdFromUrl);
       }
     }
-  }, [searchParams, trackingRideId]); // Re-run if params change
-  // --- END MODIFICATION ---
-
-  const stopTracking = () => {
-    if (watchIdRef.current !== null) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
-    }
-    setTrackingRideId(null);
-    setLastLocation(null);
-  };
+  // Add 'startTracking' to dependency array
+  }, [searchParams, trackingRideId, startTracking]); 
 
   const handleLogout = async () => {
-    stopTracking();
+    stopTracking(); // Stop tracking on logout
     await logout();
     navigate('/login');
   };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import ScheduleManagement from '../../components/Admin/ScheduleManagement';
 import Loader from '../../components/common/Loader';
@@ -9,7 +9,6 @@ import {
   ScheduledRide, 
   RideStatusUpdate, 
   RideLocationUpdate, 
-  RideStatus 
 } from '../../types';
 import { useSocket } from '../../context/SocketContext';
 import { useSearchParams } from 'react-router-dom';
@@ -62,9 +61,6 @@ const parseDateFromQuery = (dateQuery: string | null): Date => {
 };
 // --- END DATE HELPER FIXES ---
 
-// --- 'shouldAutoStart' function removed ---
-// --- 'autoStartScheduledRides' function removed ---
-
 
 const ScheduleRides: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -81,22 +77,18 @@ const ScheduleRides: React.FC = () => {
   const [error, setError] = useState('');
   const { socket } = useSocket();
   
-  // --- autoStartRef removed ---
-  
   const [isToday, setIsToday] = useState(isSameDay(selectedDate, getToday()));
 
   useEffect(() => {
     setIsToday(isSameDay(selectedDate, getToday()));
   }, [selectedDate]);
 
-  // --- 'autoStartScheduledRides' logic removed ---
-
   const fetchData = useCallback(async () => {
     try {
+      // This line uses rides.length, so it must be a dependency
       if (rides.length === 0) {
          setLoading(true);
       }
-      // --- autoStartRef reset removed ---
       
       const dateString = formatDateForAPI(selectedDate);
       setSearchParams({ date: dateString });
@@ -112,7 +104,6 @@ const ScheduleRides: React.FC = () => {
       
       if (ridesRes.data.success && ridesRes.data.data) {
         setRides(ridesRes.data.data);
-        // --- Call to autoStartScheduledRides removed ---
       } else {
         setRides([]);
       }
@@ -123,7 +114,8 @@ const ScheduleRides: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedDate, setSearchParams]); // 'rides.length' removed from dependencies
+  // --- THIS IS THE FIX: 'rides.length' is added ---
+  }, [selectedDate, setSearchParams, rides.length]); 
 
   useEffect(() => {
     fetchData();
@@ -162,7 +154,6 @@ const ScheduleRides: React.FC = () => {
     setSelectedDate(parseDateFromQuery(dateString));
   };
   
-  // --- FIX: Use local setDate ---
   const changeDay = (days: number) => {
     setSelectedDate(prevDate => {
       const newDate = new Date(prevDate);
@@ -174,7 +165,6 @@ const ScheduleRides: React.FC = () => {
   const goToToday = () => {
     setSelectedDate(getToday());
   };
-  // --- END FIX ---
 
   if (loading && buses.length === 0) {
     return (
@@ -196,7 +186,6 @@ const ScheduleRides: React.FC = () => {
           <span className="font-semibold text-lg text-gray-800">
             {formatDateForDisplay(selectedDate)}
           </span>
-          {/* This logic will now be correct */}
           {!isToday && (
             <Button variant="secondary" onClick={goToToday} className="ml-3 text-xs !py-1 !px-2">
               <Calendar className="w-3 h-3 mr-1" />

@@ -1,6 +1,6 @@
 import React from 'react';
 import { ScheduledRide, RideListProps, BusMaster, Route, RideStatus } from '../../types';
-import { BusFront, Clock, ArrowRight, MapPin, Calendar, Check } from 'lucide-react';
+import { Clock, ArrowRight, MapPin, Calendar, Check } from 'lucide-react';
 
 // --- NEW: Define component-specific props ---
 // This adds the new props we need from ViewSchedule.tsx

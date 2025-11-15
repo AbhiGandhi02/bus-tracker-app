@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ScheduledRide, RideStatusUpdate, RideLocationUpdate } from '../../types';
 import { scheduledRideAPI } from '../../services/api';
@@ -11,16 +11,16 @@ import { useSocket } from '../../context/SocketContext';
 import AdminLayout from '../../components/layout/AdminLayout'; // Use AdminLayout
 
 // --- Helper Functions ---
-const isSameDay = (date1: Date, date2: Date): boolean => {
-  return date1.getFullYear() === date2.getFullYear() &&
-         date1.getMonth() === date2.getMonth() &&
-         date1.getDate() === date2.getDate();
-};
-const getToday = (): Date => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return today;
-};
+// const isSameDay = (date1: Date, date2: Date): boolean => {
+//   return date1.getFullYear() === date2.getFullYear() &&
+//          date1.getMonth() === date2.getMonth() &&
+//          date1.getDate() === date2.getDate();
+// };
+// const getToday = (): Date => {
+//   const today = new Date();
+//   today.setHours(0, 0, 0, 0);
+//   return today;
+// };
 
 // --- FIX: Helper to format date string consistently using UTC ---
 const formatDateForQuery = (date: Date | string): string => {
@@ -103,15 +103,15 @@ const AdminTrackRide: React.FC = () => {
     fetchRideData();
   }, [rideId, searchParams]);
 
-  const isToday = useMemo(() => {
-    if (!ride) return false;
-    // We must use UTC for this comparison too
-    const rideDate = new Date(ride.date);
-    const today = new Date();
-    return rideDate.getUTCFullYear() === today.getUTCFullYear() &&
-           rideDate.getUTCMonth() === today.getUTCMonth() &&
-           rideDate.getUTCDate() === today.getUTCDate();
-  }, [ride]);
+  // const isToday = useMemo(() => {
+  //   if (!ride) return false;
+  //   // We must use UTC for this comparison too
+  //   const rideDate = new Date(ride.date);
+  //   const today = new Date();
+  //   return rideDate.getUTCFullYear() === today.getUTCFullYear() &&
+  //          rideDate.getUTCMonth() === today.getUTCMonth() &&
+  //          rideDate.getUTCDate() === today.getUTCDate();
+  // }, [ride]);
 
   // --- Socket Listeners ---
   useEffect(() => {
