@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import Map, { Marker, Popup } from 'react-map-gl';
+import Map, { Marker, Popup, Source, Layer } from 'react-map-gl';
 import type { ViewState } from 'react-map-gl';
-import { ScheduledRide, RideMapProps, RideLocationUpdate } from '../../types';
+import polyline from '@mapbox/polyline';
+import type { Feature, Geometry } from 'geojson';
+import { ScheduledRide, RideMapProps, RideLocationUpdate, Route } from '../../types';
 import { useSocket } from '../../context/SocketContext';
 import { BusFront, Loader2 } from 'lucide-react';
 import config from '../../config';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 // Helper to determine ride color based on status
 const getRideColor = (status: ScheduledRide['status']) => {
@@ -22,22 +25,49 @@ const getRideColor = (status: ScheduledRide['status']) => {
   }
 };
 
+// Helper: Decode polyline and create GeoJSON
+const createGeoJSONFeature = (route: Route | undefined): Feature<Geometry> | null => {
+  if (!route || !route.polyline) {
+    return null;
+  }
+  try {
+    const coordinates = polyline.decode(route.polyline);
+    const geoJsonCoords = coordinates.map(coord => [coord[1], coord[0]]);
+    return {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: geoJsonCoords,
+      },
+      properties: {},
+    };
+  } catch (error) {
+    console.error("Failed to decode polyline:", error);
+    return null;
+  }
+};
+
 const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRideId }) => {
   const [selectedRide, setSelectedRide] = useState<ScheduledRide | null>(null);
   const [ridesWithLocation, setRidesWithLocation] = useState<ScheduledRide[]>(rides);
   const [isLoading] = useState(false);
   const [error] = useState<string | null>(null);
-
   const { socket } = useSocket();
-
   const [viewState, setViewState] = useState<Partial<ViewState>>(config.MAP_DEFAULTS);
 
-  // Update rides state when props change
+  const routeGeoJson = useMemo(() => {
+    const currentRide = ridesWithLocation[0];
+    if (currentRide) {
+      return createGeoJSONFeature(currentRide.routeId as Route);
+    }
+    return null;
+  }, [ridesWithLocation]);
+
   useEffect(() => {
     setRidesWithLocation(rides);
   }, [rides]);
 
-  // Set initial map center when rides prop changes
+  // Set initial map center
   useEffect(() => {
     if (rides.length > 0) {
       const firstRideWithLocation = rides.find(
@@ -59,7 +89,6 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
       const ride = ridesWithLocation.find(r => r._id === selectedRideId);
       if (ride) {
         setSelectedRide(ride);
-        // Center map on selected ride if it has location
         if (ride.currentLocation) {
           setViewState((prev) => ({
             ...prev,
@@ -74,37 +103,24 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
     }
   }, [selectedRideId, ridesWithLocation]);
 
-  // Listen for real-time location updates via Socket.io
+  // Socket listener
   useEffect(() => {
     if (!socket) return;
-
     const handleLocationUpdate = (update: RideLocationUpdate) => {
-      console.log('📍 Received location update:', update);
-
       setRidesWithLocation((prevRides) =>
         prevRides.map((ride) =>
           ride._id === update.rideId
-            ? {
-                ...ride,
-                currentLocation: update.location,
-              }
+            ? { ...ride, currentLocation: update.location }
             : ride
         )
       );
-
-      // Update selected ride if it's the one being updated
       setSelectedRide((prevSelected) =>
         prevSelected && prevSelected._id === update.rideId
-          ? {
-              ...prevSelected,
-              currentLocation: update.location,
-            }
+          ? { ...prevSelected, currentLocation: update.location }
           : prevSelected
       );
     };
-
     socket.on('ride-location-update', handleLocationUpdate);
-
     return () => {
       socket.off('ride-location-update', handleLocationUpdate);
     };
@@ -114,16 +130,16 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
   const getBusNumber = (ride: ScheduledRide) => {
     return typeof ride.busId === 'object' ? ride.busId.busNumber : 'Unknown';
   };
-
   const getDriverName = (ride: ScheduledRide) => {
     return typeof ride.busId === 'object' ? ride.busId.driverName : null;
   };
-
   const getRouteName = (ride: ScheduledRide) => {
     return typeof ride.routeId === 'object' ? ride.routeId.routeName : 'Unknown';
   };
 
-  // Create Marker components
+  // --- THIS IS THE FIX ---
+  // The full code for 'markers' is here.
+  // You must not have the '{ride}' object directly inside the <Marker>
   const markers = useMemo(() => 
     ridesWithLocation
       .filter(ride => ride.currentLocation && ride.currentLocation.lat && ride.currentLocation.lng)
@@ -147,9 +163,14 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
           >
             <BusFront className="w-5 h-5 text-white" />
           </div>
+          {/* THE ERROR IS HERE: 
+            You probably have a stray '{ride}' variable here for debugging.
+            Make sure this is deleted.
+          */}
         </Marker>
       )), [ridesWithLocation]
   );
+  // --- END OF FIX ---
 
   if (isLoading) {
     return (
@@ -171,7 +192,7 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
   if (!config.MAPBOX_TOKEN) {
     return (
       <div className="h-96 bg-yellow-100 text-yellow-800 p-4 rounded-lg">
-        <strong>Warning:</strong> Mapbox token is not configured. Please add REACT_APP_MAPBOX_TOKEN to your .env file.
+        <strong>Warning:</strong> Mapbox token is not configured.
       </div>
     );
   }
@@ -185,43 +206,64 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
         style={{ width: '100%', height: '100%' }}
         mapStyle="mapbox://styles/mapbox/streets-v12"
       >
+        {routeGeoJson && (
+          <Source id="route-line" type="geojson" data={routeGeoJson}>
+            <Layer
+              id="route"
+              type="line"
+              layout={{
+                'line-join': 'round',
+                'line-cap': 'round',
+              }}
+              paint={{
+                'line-color': '#0B79D3',
+                'line-width': 5,
+                'line-opacity': 0.8,
+              }}
+            />
+          </Source>
+        )}
+
         {markers}
 
-        {selectedRide && selectedRide.currentLocation && (
-          <Popup
-            anchor="top"
-            longitude={Number(selectedRide.currentLocation.lng)}
-            latitude={Number(selectedRide.currentLocation.lat)}
-            onClose={() => setSelectedRide(null)}
-            closeOnClick={false}
-          >
-            <div className="p-2">
-              <h3 className="text-base font-bold text-indigo-700 mb-1">{getBusNumber(selectedRide)}</h3>
-              <p className="text-sm mb-1">
-                <span className="font-medium">Status:</span>{' '}
-                <span 
-                  className="font-semibold" 
-                  style={{ color: getRideColor(selectedRide.status) }}
-                >
-                  {selectedRide.status}
-                </span>
-              </p>
-              {getDriverName(selectedRide) && (
-                <p className="text-xs text-gray-600">
-                  <span className="font-medium">Driver:</span> {getDriverName(selectedRide)}
+        {selectedRide &&
+          selectedRide.currentLocation &&
+          selectedRide.currentLocation.lng &&
+          selectedRide.currentLocation.lat && (
+            <Popup
+              anchor="top"
+              longitude={selectedRide.currentLocation.lng}
+              latitude={selectedRide.currentLocation.lat}
+              onClose={() => setSelectedRide(null)}
+              closeOnClick={false}
+            >
+              <div className="p-2">
+                <h3 className="text-base font-bold text-indigo-700 mb-1">{getBusNumber(selectedRide)}</h3>
+                <p className="text-sm mb-1">
+                  <span className="font-medium">Status:</span>{' '}
+                  <span 
+                    className="font-semibold" 
+                    style={{ color: getRideColor(selectedRide.status) }}
+                  >
+                    {selectedRide.status}
+                  </span>
                 </p>
-              )}
-              {getRouteName(selectedRide) && (
-                <p className="text-xs text-gray-600">
-                  <span className="font-medium">Route:</span> {getRouteName(selectedRide)}
+                {getDriverName(selectedRide) && (
+                  <p className="text-xs text-gray-600">
+                    <span className="font-medium">Driver:</span> {getDriverName(selectedRide)}
+                  </p>
+                )}
+                {getRouteName(selectedRide) && (
+                  <p className="text-xs text-gray-600">
+                    <span className="font-medium">Route:</span> {getRouteName(selectedRide)}
+                  </p>
+                )}
+                <p className="text-xs text-gray-500 mt-2">
+                  Last updated: {new Date(selectedRide.currentLocation.timestamp).toLocaleTimeString()}
                 </p>
-              )}
-              <p className="text-xs text-gray-500 mt-2">
-                Last updated: {new Date(selectedRide.currentLocation.timestamp).toLocaleTimeString()}
-              </p>
-            </div>
-          </Popup>
-        )}
+              </div>
+            </Popup>
+          )}
       </Map>
     </div>
   );

@@ -54,6 +54,7 @@ export interface Route {
   departureLocation: string;
   arrivalLocation: string;
   rideTime: string; // e.g., "45 minutes"
+  polyline?: string;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

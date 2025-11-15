@@ -27,6 +27,9 @@ const routeSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  polyline: {
+    type: String,
+  },
   isActive: {
     type: Boolean,
     default: true
