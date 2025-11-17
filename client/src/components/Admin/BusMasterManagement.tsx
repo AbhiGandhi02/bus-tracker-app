@@ -12,11 +12,12 @@ interface Props {
 const BusMasterManagement: React.FC<Props> = ({ buses, onUpdate }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBus, setEditingBus] = useState<BusMaster | null>(null);
+  
   const [formData, setFormData] = useState<BusMasterInput>({
     busNumber: '',
-    busType: 'Non-AC',
     driverName: '',
   });
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -25,12 +26,11 @@ const BusMasterManagement: React.FC<Props> = ({ buses, onUpdate }) => {
       setEditingBus(bus);
       setFormData({
         busNumber: bus.busNumber,
-        busType: bus.busType,
         driverName: bus.driverName || '',
       });
     } else {
       setEditingBus(null);
-      setFormData({ busNumber: '', busType: 'Non-AC', driverName: '' });
+      setFormData({ busNumber: '', driverName: '' });
     }
     setIsModalOpen(true);
     setError('');
@@ -86,12 +86,13 @@ const BusMasterManagement: React.FC<Props> = ({ buses, onUpdate }) => {
             {buses.map((bus) => (
               <tr key={bus._id}>
                 <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{bus.busNumber}</td>
+                
                 <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                    ${bus.busType === 'AC' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                    {bus.busType}
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800`}>
+                    AC
                   </span>
                 </td>
+                
                 <td className="px-6 py-4 whitespace-nowrap text-gray-500">{bus.driverName || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button onClick={() => handleOpenModal(bus)} className="text-indigo-600 hover:text-indigo-900 mr-4">Edit</button>
@@ -120,19 +121,8 @@ const BusMasterManagement: React.FC<Props> = ({ buses, onUpdate }) => {
                 value={formData.busNumber}
                 onChange={(e) => setFormData({ ...formData, busNumber: e.target.value })}
               />
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Bus Type</label>
-                <select
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border"
-                  value={formData.busType}
-                  onChange={(e) => setFormData({ ...formData, busType: e.target.value as any })}
-                >
-                  <option value="Non-AC">Non-AC</option>
-                  <option value="AC">AC</option>
-                  <option value="Mini">Mini</option>
-                  <option value="Deluxe">Deluxe</option>
-                </select>
-              </div>
+              
+              
               <Input
                 label="Driver Name"
                 value={formData.driverName}

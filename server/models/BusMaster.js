@@ -7,11 +7,6 @@ const busMasterSchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
-  busType: {
-    type: String,
-    enum: ['AC', 'Non-AC', 'Mini', 'Deluxe'],
-    default: 'Non-AC'
-  },
   driverName: {
     type: String,
     trim: true

@@ -40,7 +40,6 @@ export interface BusMaster {
 
 export interface BusMasterInput {
   busNumber: string;
-  busType: 'AC' | 'Non-AC' | 'Mini' | 'Deluxe';
   driverName?: string;
 }
 
@@ -64,7 +63,9 @@ export interface RouteInput {
   routeNumber: string;
   routeName: string;
   departureLocation: string;
+  departureCoords: { lat: number; lng: number };
   arrivalLocation: string;
+  arrivalCoords: { lat: number; lng: number };
   rideTime: string;
 }
 

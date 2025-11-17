@@ -17,10 +17,18 @@ const routeSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  departureCoords: {
+    lat: { type: Number },
+    lng: { type: Number }
+  },
   arrivalLocation: {
     type: String,
     required: true,
     trim: true
+  },
+  arrivalCoords: {
+    lat: { type: Number },
+    lng: { type:Number }
   },
   rideTime: {
     type: String,

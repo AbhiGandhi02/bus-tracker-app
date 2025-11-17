@@ -1,5 +1,8 @@
 const ScheduledRide = require('../models/ScheduledRide');
 
+const Route = require('../models/Route'); 
+const { getDistance } = require('../utils/locationUtils'); 
+
 // @desc    Get scheduled rides for a date
 // @route   GET /api/scheduled-rides?date=YYYY-MM-DD
 // @access  Public
@@ -109,50 +112,79 @@ exports.updateScheduledRide = async (req, res) => {
 exports.updateRideLocation = async (req, res) => {
   try {
     const { lat, lng } = req.body;
+    const driverLocation = { lat: parseFloat(lat), lng: parseFloat(lng) };
 
     const ride = await ScheduledRide.findById(req.params.id);
 
     if (!ride) {
-      // Corrected status code from 4404 to 404
       return res.status(404).json({
         success: false,
         message: 'Ride not found'
       });
     }
 
+    // Update the ride's location
     ride.currentLocation = {
-      lat: parseFloat(lat),
-      lng: parseFloat(lng),
+      lat: driverLocation.lat,
+      lng: driverLocation.lng,
       timestamp: Date.now()
     };
 
+    // --- NEW GEOFENCING LOGIC ---
+    // Define our trigger distance (e.g., 50 meters)
+    const GEOFENCE_RADIUS = 50; 
+    let statusHasChanged = false;
+
+    // We only process auto-updates for active rides
+    if (ride.status === 'Scheduled' || ride.status === 'In Progress') {
+      
+      // We must fetch the route to get its coordinates
+      const route = await Route.findById(ride.routeId);
+      if (route) {
+
+        // CASE 1: The ride is "Scheduled" and waiting to start.
+        if (ride.status === 'Scheduled') {
+          const distanceToStart = getDistance(driverLocation, route.departureCoords);
+          
+          if (distanceToStart < GEOFENCE_RADIUS) {
+            ride.status = 'In Progress';
+            statusHasChanged = true;
+          }
+        } 
+        
+        // CASE 2: The ride is "In Progress" and heading to the finish.
+        else if (ride.status === 'In Progress') {
+          const distanceToEnd = getDistance(driverLocation, route.arrivalCoords);
+
+          if (distanceToEnd < GEOFENCE_RADIUS) {
+            ride.status = 'Completed';
+            statusHasChanged = true;
+          }
+        }
+      }
+    }
+    // --- END GEOFENCING LOGIC ---
 
     await ride.save();
 
     // Emit socket event for location
     if (req.app.get('io')) {
-      // --- FIX for busNumber ---
-      let busNumber = '...';
-      try {
-        const populatedRide = await ScheduledRide.findById(ride._id).populate('busId');
-        
-        // --- THIS IS THE FIX ---
-        // Changed `(populatedRide.busId as any).busNumber` to standard JavaScript
-        if (populatedRide && populatedRide.busId && populatedRide.busId.busNumber) {
-          busNumber = populatedRide.busId.busNumber;
-        }
-        // --- END OF FIX ---
-
-      } catch (e) {
-        console.warn("Could not populate busNumber for socket event");
-      }
-      // --- END FIX ---
+      const populatedRide = await ScheduledRide.findById(ride._id).populate('busId', 'busNumber');
+      const busNumber = populatedRide.busId ? populatedRide.busId.busNumber : '...';
       
       req.app.get('io').emit('ride-location-update', {
         rideId: ride._id,
-        busNumber: busNumber, // Send the correct bus number
+        busNumber: busNumber,
         location: ride.currentLocation
       });
+
+      if (statusHasChanged) {
+        req.app.get('io').emit('ride-status-update', {
+          rideId: ride._id,
+          status: ride.status
+        });
+        console.log(`[Socket] Geofence triggered ride-status-update for ${ride._id}: ${ride.status}`);
+      }
     }
 
     res.status(200).json({

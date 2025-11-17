@@ -2,13 +2,32 @@ const Route = require('../models/Route');
 const { Client } = require('@googlemaps/google-maps-services-js');
 const googleMapsClient = new Client({});
 
+// Geocodes a text address string into {lat, lng} coordinates.
+// const geocodeAddress = async (address) => {
+//   try {
+//     const response = await googleMapsClient.geocode({
+//       params: {
+//         address: address,
+//         key: process.env.GOOGLE_MAPS_API_KEY,
+//       },
+//     });
+//     if (response.data.results.length > 0) {
+//       return response.data.results[0].geometry.location; // Returns { lat, lng }
+//     }
+//     return null;
+//   } catch (error) {
+//     console.error('Google Geocoding API Error:', error.message);
+//     return null;
+//   }
+// };
+
 // Fetches an encoded polyline from Google Maps Directions API.
-const getPolylineForRoute = async (origin, destination) => {
+const getPolylineForRoute = async (originCoords, destinationCoords) => {
   try {
     const response = await googleMapsClient.directions({
       params: {
-        origin: origin,
-        destination: destination,
+        origin: originCoords,
+        destination: destinationCoords,
         key: process.env.GOOGLE_MAPS_API_KEY,
       },
       timeout: 1000, // Optional: timeout
@@ -51,18 +70,20 @@ exports.getAllRoutes = async (req, res) => {
 // @access  Private/Admin
 exports.createRoute = async (req, res) => {
   try {
-    const { departureLocation, arrivalLocation } = req.body;
+    // The frontend is now sending 'departureCoords' and 'arrivalCoords'
+    const { departureCoords, arrivalCoords } = req.body;
 
-    // Fetch the polyline from Google
-    const polyline = await getPolylineForRoute(departureLocation, arrivalLocation);
+    // 1. Fetch the polyline using the coordinates from the client
+    const polyline = await getPolylineForRoute(departureCoords, arrivalCoords);
     
-    // Add the polyline to our request body
+    // 2. Add the polyline to the request body
     const routeData = {
       ...req.body,
       polyline: polyline,
+      // 'departureCoords' and 'arrivalCoords' are already in req.body
     };
 
-    const route = await Route.create(routeData); // Use new routeData
+    const route = await Route.create(routeData);
 
     res.status(201).json({
       success: true,
@@ -82,29 +103,23 @@ exports.createRoute = async (req, res) => {
 // @access  Private/Admin
 exports.updateRoute = async (req, res) => {
   try {
-    const { departureLocation, arrivalLocation } = req.body;
+    const { departureCoords, arrivalCoords } = req.body;
     let updatedData = { ...req.body };
 
-    // --- ADD THIS ---
-    // If locations are changing, fetch a new polyline
-    if (departureLocation || arrivalLocation) {
-      const currentRoute = await Route.findById(req.params.id);
-
-      const newPolyline = await getPolylineForRoute(
-        departureLocation || currentRoute.departureLocation,
-        arrivalLocation || currentRoute.arrivalLocation
-      );
+    // If locations are changing, the frontend has sent new coords
+    if (departureCoords || arrivalCoords) {
+      // 1. Fetch new polyline using the new coordinates
+      const newPolyline = await getPolylineForRoute(departureCoords, arrivalCoords);
+      
+      // 2. Add new polyline to be updated
       updatedData.polyline = newPolyline;
     }
-    // --- END ADD ---
 
-    // --- MODIFY THIS LINE ---
     const route = await Route.findByIdAndUpdate(
       req.params.id,
       updatedData, // Use new updatedData
       { new: true, runValidators: true }
     );
-    // --- END MODIFY ---
 
     if (!route) {
       return res.status(404).json({
