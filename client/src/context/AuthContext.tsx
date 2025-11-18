@@ -41,7 +41,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
           const idToken = await firebaseUser.getIdToken();
           
-          const response = await axios.get<AuthApiResponse>(`${config.API_URL}/auth/me`, {
+          const response = await axios.get<AuthApiResponse>(`${config.API_URL}/api/auth/me`, {
             headers: {
               Authorization: `Bearer ${idToken}`
             }
