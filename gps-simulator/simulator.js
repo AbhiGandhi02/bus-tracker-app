@@ -3,7 +3,7 @@
 
 const axios = require('axios');
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'https://bus-tracker-app-cvq9.onrender.com/api';
 
 // Configuration
 const BUS_ID = 'BUS_ID_HERE'; // Replace with actual bus ID from database
