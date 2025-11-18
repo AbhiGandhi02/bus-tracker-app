@@ -7,12 +7,9 @@ exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find().sort({ role: 1, name: 1 });
 
-    // --- THIS IS THE FIX ---
-    // We must remap the user data to be consistent with the /api/auth/me
-    // endpoint. We will rename `_id` to `id`.
     const formattedUsers = users.map(user => {
       return {
-        id: user._id, // Rename _id to id
+        id: user._id,
         firebaseUid: user.firebaseUid,
         email: user.email,
         name: user.name,
@@ -22,12 +19,11 @@ exports.getAllUsers = async (req, res) => {
         lastLogin: user.lastLogin
       };
     });
-    // --- END OF FIX ---
 
     res.status(200).json({
       success: true,
       count: formattedUsers.length,
-      data: formattedUsers // Send the newly formatted array
+      data: formattedUsers 
     });
   } catch (error) {
     res.status(500).json({
@@ -44,7 +40,7 @@ exports.getAllUsers = async (req, res) => {
 exports.updateUserRole = async (req, res) => {
   try {
     const { role } = req.body;
-    const userIdToUpdate = req.params.id; // This 'id' comes from the URL
+    const userIdToUpdate = req.params.id; 
 
     // Validate role
     if (!['user', 'admin', 'driver'].includes(role)) {
@@ -77,14 +73,11 @@ exports.updateUserRole = async (req, res) => {
     }
     // --- End Logic ---
 
-    // --- THIS IS THE FIX (Part 2) ---
-    // Use findByIdAndUpdate, which correctly uses the 'id' (as _id)
     const user = await User.findByIdAndUpdate(
       userIdToUpdate,
       { role: role },
       { new: true, runValidators: true }
     );
-    // --- END OF FIX ---
 
     if (!user) {
       return res.status(404).json({

@@ -6,7 +6,7 @@ const axios = require('axios');
 const API_URL = 'http://localhost:5000/api';
 
 // Configuration
-const BUS_ID = 'YOUR_BUS_ID_HERE'; // Replace with actual bus ID from database
+const BUS_ID = 'BUS_ID_HERE'; // Replace with actual bus ID from database
 const UPDATE_INTERVAL = 5000; // Update every 5 seconds
 
 // Sample route coordinates (Bangalore area)
