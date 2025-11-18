@@ -13,7 +13,7 @@ dotenv.config();
 connectDB();
 
 // Initialize Firebase Admin
-const serviceAccount = require('./config/serviceAccountKey.json');
+const serviceAccount = require('./serviceAccountKey.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
