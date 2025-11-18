@@ -8,7 +8,7 @@ import { auth } from '../config/firebase';
 import config from '../config'; // Import config for API_URL
 
 const api: AxiosInstance = axios.create({
-  baseURL: config.API_URL, // Use API_URL from config
+  baseURL: `${config.API_URL}/api`, // Use API_URL from config
   headers: {
     'Content-Type': 'application/json'
   }
