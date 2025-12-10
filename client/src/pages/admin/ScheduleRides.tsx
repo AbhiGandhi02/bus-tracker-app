@@ -4,30 +4,23 @@ import ScheduleManagement from '../../components/Admin/ScheduleManagement';
 import Loader from '../../components/common/Loader';
 import { busMasterAPI, routeAPI, scheduledRideAPI } from '../../services/api';
 import { 
-  BusMaster, 
-  Route, 
-  ScheduledRide, 
-  RideStatusUpdate, 
-  RideLocationUpdate, 
+  BusMaster, Route, ScheduledRide, RideStatusUpdate, RideLocationUpdate 
 } from '../../types';
 import { useSocket } from '../../context/SocketContext';
 import { useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
-import Button from '../../components/common/Button';
+import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'; // Icons
 
-// --- DATE HELPER FIXES ---
-
+// --- DATE HELPER FIXES (Preserved) ---
 const getToday = (): Date => {
   const today = new Date();
-  today.setHours(0, 0, 0, 0); // Normalize to start of *local* day
+  today.setHours(0, 0, 0, 0); 
   return today;
 };
 
-// --- FIX: Use local date parts ---
 const formatDateForAPI = (date: Date): string => {
-  const year = date.getFullYear(); // local year
-  const month = (date.getMonth() + 1).toString().padStart(2, '0'); // local month
-  const day = date.getDate().toString().padStart(2, '0'); // local day
+  const year = date.getFullYear(); 
+  const month = (date.getMonth() + 1).toString().padStart(2, '0'); 
+  const day = date.getDate().toString().padStart(2, '0'); 
   return `${year}-${month}-${day}`;
 };
 
@@ -37,18 +30,14 @@ const formatDateForDisplay = (date: Date): string => {
   });
 };
 
-// --- FIX: Use local date parts ---
 const isSameDay = (date1: Date, date2: Date): boolean => {
   return date1.getFullYear() === date2.getFullYear() &&
          date1.getMonth() === date2.getMonth() &&
          date1.getDate() === date2.getDate();
 };
 
-// --- FIX: Parse query string as a local date ---
 const parseDateFromQuery = (dateQuery: string | null): Date => {
   if (dateQuery) {
-    // Creates a date by parsing YYYY-MM-DD as local, not UTC
-    // '2025-11-11' becomes Nov 11 2025 00:00:00 (Local)
     const parts = dateQuery.split('-').map(Number);
     if (parts.length === 3) {
       const date = new Date(parts[0], parts[1] - 1, parts[2]);
@@ -57,10 +46,9 @@ const parseDateFromQuery = (dateQuery: string | null): Date => {
       }
     }
   }
-  return getToday(); // Default to local today
+  return getToday(); 
 };
-// --- END DATE HELPER FIXES ---
-
+// --- END DATE HELPERS ---
 
 const ScheduleRides: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -85,7 +73,6 @@ const ScheduleRides: React.FC = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      // This line uses rides.length, so it must be a dependency
       if (rides.length === 0) {
          setLoading(true);
       }
@@ -96,7 +83,7 @@ const ScheduleRides: React.FC = () => {
       const [busesRes, routesRes, ridesRes] = await Promise.all([
         busMasterAPI.getAll(),
         routeAPI.getAll(),
-        scheduledRideAPI.getByDate(dateString) // Fetch using local date string
+        scheduledRideAPI.getByDate(dateString) 
       ]);
 
       if (busesRes.data.success && busesRes.data.data) setBuses(busesRes.data.data);
@@ -114,7 +101,6 @@ const ScheduleRides: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  // --- THIS IS THE FIX: 'rides.length' is added ---
   }, [selectedDate, setSearchParams, rides.length]); 
 
   useEffect(() => {
@@ -126,7 +112,6 @@ const ScheduleRides: React.FC = () => {
       return;
     }
     const handleStatusUpdate = (update: RideStatusUpdate) => {
-      console.log('[Socket] Admin received ride-status-update:', update);
       setRides(prevRides => 
         prevRides.map(ride => 
           ride._id === update.rideId ? { ...ride, status: update.status } : ride
@@ -157,7 +142,7 @@ const ScheduleRides: React.FC = () => {
   const changeDay = (days: number) => {
     setSelectedDate(prevDate => {
       const newDate = new Date(prevDate);
-      newDate.setDate(newDate.getDate() + days); // Use local setDate
+      newDate.setDate(newDate.getDate() + days); 
       return newDate;
     });
   };
@@ -169,33 +154,53 @@ const ScheduleRides: React.FC = () => {
   if (loading && buses.length === 0) {
     return (
       <AdminLayout title="Daily Schedule">
-        <div className="flex justify-center p-12"><Loader size="lg" /></div>
+        <div className="flex justify-center items-center h-[60vh]">
+           <Loader size="lg" />
+        </div>
       </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout title={`Schedule for ${formatDateForDisplay(selectedDate)}`}>
-      {error && <div className="bg-red-50 text-red-700 p-4 rounded-md mb-6">{error}</div>}
+    <AdminLayout title="Daily Schedule">
       
-      <div className="mb-6 flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-gray-200">
-        <Button variant="outline" onClick={() => changeDay(-1)} className="!px-3">
-          <ChevronLeft className="w-5 h-5" />
-        </Button>
-        <div className="flex-1 text-center">
-          <span className="font-semibold text-lg text-gray-800">
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl mb-6 flex items-center gap-3">
+           <div className="w-2 h-2 rounded-full bg-red-500" />
+           {error}
+        </div>
+      )}
+      
+      {/* Date Navigation Bar (Styled for Dark Mode) */}
+      <div className="mb-8 flex items-center justify-between bg-[#1A1640]/50 p-2 rounded-2xl shadow-lg border border-white/5 backdrop-blur-md max-w-2xl mx-auto">
+        <button 
+           onClick={() => changeDay(-1)} 
+           className="p-3 hover:bg-white/10 rounded-xl text-gray-300 hover:text-white transition-colors"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+        
+        <div className="flex flex-col items-center">
+          <span className="font-bold text-lg text-white">
             {formatDateForDisplay(selectedDate)}
           </span>
           {!isToday && (
-            <Button variant="secondary" onClick={goToToday} className="ml-3 text-xs !py-1 !px-2">
-              <Calendar className="w-3 h-3 mr-1" />
+            <button 
+               onClick={goToToday} 
+               className="text-xs text-[#B045FF] hover:text-[#d389ff] font-medium mt-1 flex items-center gap-1 transition-colors"
+            >
+              <Calendar className="w-3 h-3" />
               Go to Today
-            </Button>
+            </button>
           )}
         </div>
-        <Button variant="outline" onClick={() => changeDay(1)} className="!px-3">
-          <ChevronRight className="w-5 h-5" />
-        </Button>
+        
+        <button 
+           onClick={() => changeDay(1)} 
+           className="p-3 hover:bg-white/10 rounded-xl text-gray-300 hover:text-white transition-colors"
+        >
+          <ChevronRight className="w-6 h-6" />
+        </button>
       </div>
 
       <ScheduleManagement

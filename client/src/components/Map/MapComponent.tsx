@@ -216,7 +216,7 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
                 'line-cap': 'round',
               }}
               paint={{
-                'line-color': '#0B79D3',
+                'line-color': '#B045FF',
                 'line-width': 5,
                 'line-opacity': 0.8,
               }}

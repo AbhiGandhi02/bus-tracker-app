@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { ScheduledRide, BusMaster, Route, ScheduledRideInput, RideStatus } from '../../types';
-import Button from '../common/Button';
-import Input from '../common/Input';
 import { scheduledRideAPI } from '../../services/api';
-// --- MODIFICATION: Import useNavigate and useAuth ---
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-// --- END MODIFICATION ---
+import { 
+  Plus, Edit2, Trash2, Calendar, Clock, MapPin, 
+  PlayCircle, CheckCircle, X, ChevronDown, Bus 
+} from 'lucide-react';
+import Loader from '../common/Loader';
 
 interface Props {
   rides: ScheduledRide[];
@@ -31,6 +32,7 @@ const ScheduleManagement: React.FC<Props> = ({
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRide, setEditingRide] = useState<ScheduledRide | null>(null);
+  
   const [formData, setFormData] = useState<ScheduledRideInput>({
     busId: '',
     routeId: '',
@@ -38,14 +40,15 @@ const ScheduleManagement: React.FC<Props> = ({
     departureTime: '',
     status: 'Scheduled',
   });
+
   const [loading, setLoading] = useState(false);
   const [quickActionLoading, setQuickActionLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
   
-  // --- MODIFICATION: Get hooks ---
   const navigate = useNavigate();
   const { isPlanner, isOperator } = useAuth();
-  // --- END MODIFICATION ---
+
+  // --- HANDLERS ---
 
   const handleOpenModal = (e: React.MouseEvent, ride?: ScheduledRide) => {
     e.stopPropagation(); 
@@ -108,7 +111,6 @@ const ScheduleManagement: React.FC<Props> = ({
     }
   };
 
-  // --- MODIFICATION: Add redirect logic ---
   const handleQuickStatusChange = async (e: React.MouseEvent, ride: ScheduledRide, newStatus: RideStatus) => {
     e.stopPropagation();
     setQuickActionLoading(ride._id);
@@ -116,13 +118,9 @@ const ScheduleManagement: React.FC<Props> = ({
       await scheduledRideAPI.update(ride._id, { status: newStatus });
       onUpdate();
 
-      // --- THIS IS THE REDIRECT ---
-      // If we just started the ride, navigate to the driver dashboard
       if (newStatus === 'In Progress') {
         navigate(`/driver?rideId=${ride._id}`);
       }
-      // --- END REDIRECT ---
-
     } catch (err) {
       console.error("Failed to update status", err);
       alert('Failed to update status');
@@ -130,217 +128,311 @@ const ScheduleManagement: React.FC<Props> = ({
       setQuickActionLoading(null);
     }
   };
-  // --- END MODIFICATION ---
 
   const handleRowClick = (ride: ScheduledRide) => {
     const dateString = formatDateForQuery(ride.date);
     navigate(`/admin/track/${ride._id}?date=${dateString}`);
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'Scheduled': return 'bg-blue-100 text-blue-800';
-      case 'In Progress': return 'bg-yellow-100 text-yellow-800';
-      case 'Completed': return 'bg-green-100 text-green-800';
-      case 'Cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'Scheduled': 
+        return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Scheduled</span>;
+      case 'In Progress': 
+        return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#B045FF]/10 text-[#B045FF] border border-[#B045FF]/20 animate-pulse">In Progress</span>;
+      case 'Completed': 
+        return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-green-500/10 text-green-400 border border-green-500/20">Completed</span>;
+      case 'Cancelled': 
+        return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20">Cancelled</span>;
+      default: 
+        return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-gray-500/10 text-gray-400 border border-gray-500/20">{status}</span>;
     }
   };
 
   return (
     <div>
-      {/* Top Bar: Date Picker and Add Button */}
-      <div className="mb-6 flex flex-wrap justify-between items-center gap-4">
-        <div className="flex items-center gap-4">
-          <label className="font-medium text-gray-700">Select Date:</label>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => onDateChange(e.target.value)}
-            className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 border px-3 py-2"
-          />
+      {/* --- HEADER CONTROLS --- */}
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#1A1640]/50 p-4 rounded-2xl border border-white/5 backdrop-blur-md">
+        
+        <div className="flex items-center gap-4 w-full sm:w-auto">
+          <div className="flex items-center gap-2 px-4 py-2 bg-[#0D0A2A] border border-white/10 rounded-xl w-full sm:w-auto">
+             <Calendar className="w-5 h-5 text-[#B045FF]" />
+             <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => onDateChange(e.target.value)}
+                className="bg-transparent border-none text-white focus:ring-0 text-sm font-medium w-full"
+             />
+          </div>
         </div>
         
-        {/* --- MODIFICATION: Hide button if not a Planner --- */}
         {isPlanner() && (
-          <Button onClick={(e) => handleOpenModal(e)}>+ Schedule New Ride</Button>
+          <button 
+            onClick={(e) => handleOpenModal(e)}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-[#B045FF] hover:bg-[#9d3ce3] text-white rounded-xl font-bold shadow-lg shadow-[#B045FF]/20 transition-all w-full sm:w-auto transform hover:-translate-y-0.5"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="hidden sm:inline">Schedule Ride</span>
+            <span className="sm:hidden">Add</span>
+          </button>
         )}
-        {/* --- END MODIFICATION --- */}
       </div>
 
-      {/* Rides Table */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Route</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bus</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {rides.map((ride) => {
-              const bus = ride.busId as BusMaster;
-              const route = ride.routeId as Route;
-              
-              return (
-                <tr 
-                  key={ride._id}
-                  onClick={() => handleRowClick(ride)}
-                  className="cursor-pointer hover:bg-gray-50"
-                >
-                  <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{ride.departureTime}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                    <div className="text-sm font-medium text-gray-900">{route?.routeNumber}</div>
-                    <div className="text-sm text-gray-500">{route?.routeName}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                    <div className="text-sm font-medium text-gray-900">{bus?.busNumber}</div>
-                    <div className="text-sm text-gray-500">{bus?.driverName}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(ride.status)}`}>
-                      {ride.status}
-                    </span>
-                  </td>
-                  
-                  {/* --- MODIFICATION: Hide buttons based on role --- */}
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                    {/* Only Operators can see Start/Complete */}
-                    {isOperator() && ride.status === 'Scheduled' && (
-                      <Button
-                        variant="secondary"
-                        className="text-xs py-1 px-2 !bg-green-100 !text-green-700 hover:!bg-green-200"
-                        onClick={(e) => handleQuickStatusChange(e, ride, 'In Progress')}
-                        isLoading={quickActionLoading === ride._id}
-                        disabled={quickActionLoading !== null || !isToday}
-                        title={!isToday ? "You can only start rides on the same day" : "Start this ride"}
-                      >
-                        Start Ride
-                      </Button>
-                    )}
-                    {isOperator() && ride.status === 'In Progress' && (
-                        <Button
-                        variant="secondary"
-                        className="text-xs py-1 px-2 !bg-gray-100 !text-gray-700 hover:!bg-gray-200"
-                        onClick={(e) => handleQuickStatusChange(e, ride, 'Completed')}
-                        isLoading={quickActionLoading === ride._id}
-                        disabled={quickActionLoading !== null || !isToday}
-                        title={!isToday ? "You can only complete rides on the same day" : "Mark as Completed"}
-                      >
-                        Complete
-                      </Button>
-                    )}
-
-                    {/* Only Planners can see Edit/Delete */}
-                    {isPlanner() && (
-                      <>
-                        <button 
-                          onClick={(e) => handleOpenModal(e, ride)} 
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          Edit
-                        </button>
-                        <button 
-                          onClick={(e) => handleDelete(e, ride._id)} 
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          Delete
-                        </button>
-                      </>
-                    )}
-                  </td>
-                  {/* --- END MODIFICATION --- */}
-                </tr>
-              );
-            })}
-            {rides.length === 0 && (
+      {/* --- TABLE --- */}
+      <div className="w-full bg-[#1A1640]/50 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden shadow-xl">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-white/10">
+            <thead className="bg-white/5">
               <tr>
-                <td colSpan={5} className="px-6 py-4 text-center text-gray-500">No rides scheduled for this date.</td>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Time</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Route Details</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Bus & Driver</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-right text-xs font-bold text-gray-400 uppercase tracking-wider">Actions</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {rides.map((ride) => {
+                const bus = ride.busId as BusMaster;
+                const route = ride.routeId as Route;
+                
+                return (
+                  <tr 
+                    key={ride._id}
+                    onClick={() => handleRowClick(ride)}
+                    className="cursor-pointer hover:bg-white/5 transition-colors group"
+                  >
+                    {/* Time */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                       <div className="flex items-center gap-2 text-white font-mono text-lg font-bold">
+                          <Clock className="w-4 h-4 text-[#B045FF]" />
+                          {ride.departureTime}
+                       </div>
+                    </td>
+
+                    {/* Route */}
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                         <span className="text-white font-semibold flex items-center gap-2">
+                            <span className="px-1.5 py-0.5 rounded bg-white/10 text-xs text-gray-300 border border-white/10">{route?.routeNumber}</span>
+                            {route?.routeName}
+                         </span>
+                         <div className="flex items-center gap-1 text-xs text-gray-400 mt-1">
+                            <MapPin className="w-3 h-3" />
+                            {route?.departureLocation} <span className="text-gray-600">→</span> {route?.arrivalLocation}
+                         </div>
+                      </div>
+                    </td>
+
+                    {/* Bus */}
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                         <span className="text-white font-medium flex items-center gap-2">
+                            <Bus className="w-4 h-4 text-gray-500" />
+                            {bus?.busNumber}
+                         </span>
+                         <span className="text-xs text-gray-400 pl-6">
+                            {bus?.driverName || "No Driver"}
+                         </span>
+                      </div>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getStatusBadge(ride.status)}
+                    </td>
+                    
+                    {/* Actions */}
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                        
+                        {/* Operator Actions (Start/Complete) */}
+                        {isOperator() && ride.status === 'Scheduled' && (
+                          <button
+                            className="flex items-center gap-1 px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/20 rounded-lg transition-colors text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={(e) => handleQuickStatusChange(e, ride, 'In Progress')}
+                            disabled={quickActionLoading === ride._id || !isToday}
+                            title={!isToday ? "Only today's rides" : "Start Trip"}
+                          >
+                            {quickActionLoading === ride._id ? <Loader size="sm" /> : <PlayCircle className="w-3 h-3" />}
+                            Start
+                          </button>
+                        )}
+                        
+                        {isOperator() && ride.status === 'In Progress' && (
+                           <button
+                            className="flex items-center gap-1 px-3 py-1.5 bg-gray-500/10 hover:bg-gray-500/20 text-gray-300 border border-gray-500/20 rounded-lg transition-colors text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={(e) => handleQuickStatusChange(e, ride, 'Completed')}
+                            disabled={quickActionLoading === ride._id || !isToday}
+                          >
+                            {quickActionLoading === ride._id ? <Loader size="sm" /> : <CheckCircle className="w-3 h-3" />}
+                            Complete
+                          </button>
+                        )}
+
+                        {/* Planner Actions (Edit/Delete) */}
+                        {isPlanner() && (
+                          <>
+                            <button 
+                              onClick={(e) => handleOpenModal(e, ride)} 
+                              className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                              title="Edit"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={(e) => handleDelete(e, ride._id)} 
+                              className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {rides.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                     <div className="flex flex-col items-center gap-2">
+                        <Calendar className="w-8 h-8 text-gray-700" />
+                        <p>No rides scheduled for this date.</p>
+                     </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Modal - Only show if isPlanner */}
+      {/* --- MODAL --- */}
       {isPlanner() && isModalOpen && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-medium mb-4">{editingRide ? 'Edit Schedule' : 'Add New Schedule'}</h3>
-            {error && <p className="text-red-600 mb-4 text-sm">{error}</p>}
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-[#1A1640] border border-white/10 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            
+            <div className="flex justify-between items-center mb-6">
+               <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  {editingRide ? <Edit2 className="w-5 h-5 text-[#B045FF]" /> : <Plus className="w-5 h-5 text-[#B045FF]" />}
+                  {editingRide ? 'Edit Schedule' : 'New Schedule'}
+               </h3>
+               <button onClick={handleCloseModal} className="text-gray-400 hover:text-white transition-colors">
+                  <X className="w-5 h-5" />
+               </button>
+            </div>
+
+            {error && (
+               <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-red-400 text-sm">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                  {error}
+               </div>
+            )}
+            
             <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                type="date"
-                label="Date"
-                required
-                value={formData.date as string}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                disabled={!!editingRide}
-              />
-              <Input
-                type="time"
-                label="Departure Time"
-                required
-                value={formData.departureTime}
-                onChange={(e) => setFormData({ ...formData, departureTime: e.target.value })}
-              />
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Select Route</label>
-                <select
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border"
-                  value={formData.routeId}
-                  onChange={(e) => setFormData({ ...formData, routeId: e.target.value })}
-                  required
-                >
-                  <option value="">Select a route...</option>
-                  {routes.map(route => (
-                    <option key={route._id} value={route._id}>
-                      {route.routeNumber} - {route.routeName}
-                    </option>
-                  ))}
-                </select>
+              
+              <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-400 uppercase">Date</label>
+                    <input
+                       type="date"
+                       required
+                       value={formData.date as string}
+                       onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                       disabled={!!editingRide}
+                       className="w-full bg-[#0D0A2A] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#B045FF] transition-colors disabled:opacity-50"
+                    />
+                 </div>
+                 <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-400 uppercase">Departure</label>
+                    <input
+                       type="time"
+                       required
+                       value={formData.departureTime}
+                       onChange={(e) => setFormData({ ...formData, departureTime: e.target.value })}
+                       className="w-full bg-[#0D0A2A] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#B045FF] transition-colors"
+                    />
+                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Select Bus</label>
-                <select
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border"
-                  value={formData.busId}
-                  onChange={(e) => setFormData({ ...formData, busId: e.target.value })}
-                  required
-                >
-                  <option value="">Select a bus...</option>
-                  {buses.map(bus => (
-                    <option key={bus._id} value={bus._id}>
-                      {bus.busNumber} ({bus.busType})
-                    </option>
-                  ))}
-                </select>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-400 uppercase">Route</label>
+                <div className="relative">
+                   <select
+                      className="w-full bg-[#0D0A2A] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#B045FF] transition-colors appearance-none cursor-pointer"
+                      value={formData.routeId}
+                      onChange={(e) => setFormData({ ...formData, routeId: e.target.value })}
+                      required
+                   >
+                      <option value="">Select a route...</option>
+                      {routes.map(route => (
+                        <option key={route._id} value={route._id}>
+                          {route.routeNumber} - {route.routeName}
+                        </option>
+                      ))}
+                   </select>
+                   <ChevronDown className="absolute right-4 top-3.5 w-4 h-4 text-gray-500 pointer-events-none" />
+                </div>
               </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-400 uppercase">Bus</label>
+                <div className="relative">
+                   <select
+                      className="w-full bg-[#0D0A2A] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#B045FF] transition-colors appearance-none cursor-pointer"
+                      value={formData.busId}
+                      onChange={(e) => setFormData({ ...formData, busId: e.target.value })}
+                      required
+                   >
+                      <option value="">Select a bus...</option>
+                      {buses.map(bus => (
+                        <option key={bus._id} value={bus._id}>
+                          {bus.busNumber} ({bus.busType})
+                        </option>
+                      ))}
+                   </select>
+                   <ChevronDown className="absolute right-4 top-3.5 w-4 h-4 text-gray-500 pointer-events-none" />
+                </div>
+              </div>
+
               {editingRide && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select
-                    className={`mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border
-                          ${!isToday ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as RideStatus })}
-                    disabled={!isToday}
-                    title={!isToday ? "Status can only be changed on the day of the ride" : "Change ride status"}
-                  >
-                    <option value="Scheduled">Scheduled</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Cancelled">Cancelled</option>
-                  </select>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-400 uppercase">Status</label>
+                  <div className="relative">
+                     <select
+                        className={`w-full bg-[#0D0A2A] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#B045FF] transition-colors appearance-none cursor-pointer ${!isToday ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        value={formData.status}
+                        onChange={(e) => setFormData({ ...formData, status: e.target.value as RideStatus })}
+                        disabled={!isToday}
+                     >
+                        <option value="Scheduled">Scheduled</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                     </select>
+                     <ChevronDown className="absolute right-4 top-3.5 w-4 h-4 text-gray-500 pointer-events-none" />
+                  </div>
                 </div>
               )}
 
-              <div className="mt-5 flex justify-end space-x-3">
-                <Button type="button" variant="outline" onClick={handleCloseModal}>Cancel</Button>
-                <Button type="submit" isLoading={loading}>{editingRide ? 'Update' : 'Schedule'}</Button>
+              <div className="mt-8 flex justify-end space-x-3 pt-4 border-t border-white/5">
+                <button 
+                  type="button" 
+                  onClick={handleCloseModal}
+                  className="px-4 py-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  className="px-6 py-2 bg-[#B045FF] hover:bg-[#9d3ce3] text-white rounded-xl font-bold shadow-lg shadow-[#B045FF]/20 flex items-center gap-2"
+                >
+                  {loading && <Loader size="sm" />}
+                  {editingRide ? 'Update' : 'Schedule'}
+                </button>
               </div>
             </form>
           </div>

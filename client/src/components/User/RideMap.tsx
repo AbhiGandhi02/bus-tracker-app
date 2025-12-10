@@ -1,46 +1,37 @@
 import React, { useState, useEffect, useMemo } from 'react';
-// --- MODIFICATION: Import Source, Layer, and types ---
 import Map, { Marker, Popup, Source, Layer } from 'react-map-gl';
 import type { ViewState } from 'react-map-gl';
 import polyline from '@mapbox/polyline';
 import type { Feature, Geometry } from 'geojson';
-import { ScheduledRide, RideMapProps, Route } from '../../types';
-// --- END MODIFICATION ---
-import { useSocket } from '../../context/SocketContext';
-import { BusFront, Loader2 } from 'lucide-react';
-import config from '../../config';
+import { BusFront } from 'lucide-react';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-// Helper to determine marker color based on status
+import { ScheduledRide, RideMapProps, Route } from '../../types';
+import { useSocket } from '../../context/SocketContext';
+import config from '../../config';
+
+// Theme Colors
+const THEME_PURPLE = '#B045FF';
+const THEME_DARK = '#0D0A2A';
+
 const getRideColor = (status: ScheduledRide['status']) => {
   switch (status) {
-    case 'Scheduled':
-      return '#3b82f6'; // Blue
-    case 'In Progress':
-      return '#10b981'; // Green
-    case 'Completed':
-      return '#6b7280'; // Gray
-    case 'Cancelled':
-      return '#ef4444'; // Red
-    default:
-      return '#6b7280';
+    case 'Scheduled': return '#3b82f6'; 
+    case 'In Progress': return '#10b981';
+    case 'Completed': return '#6b7280';
+    case 'Cancelled': return '#ef4444';
+    default: return '#6b7280';
   }
 };
 
-// --- NEW HELPER: Decode polyline and create GeoJSON ---
 const createGeoJSONFeature = (route: Route | undefined): Feature<Geometry> | null => {
-  if (!route || !route.polyline) {
-    return null;
-  }
+  if (!route || !route.polyline) return null;
   try {
     const coordinates = polyline.decode(route.polyline);
     const geoJsonCoords = coordinates.map(coord => [coord[1], coord[0]]);
     return {
       type: 'Feature',
-      geometry: {
-        type: 'LineString',
-        coordinates: geoJsonCoords,
-      },
+      geometry: { type: 'LineString', coordinates: geoJsonCoords },
       properties: {},
     };
   } catch (error) {
@@ -48,28 +39,22 @@ const createGeoJSONFeature = (route: Route | undefined): Feature<Geometry> | nul
     return null;
   }
 };
-// --- END NEW HELPER ---
 
 const RideMap: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRideId }) => {
   const [selectedRide, setSelectedRide] = useState<ScheduledRide | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const { socket } = useSocket();
 
-  const [viewState, setViewState] = useState<Partial<ViewState>>(config.MAP_DEFAULTS);
+  const [viewState, setViewState] = useState<Partial<ViewState>>({
+    latitude: 12.9716, 
+    longitude: 77.5946,
+    zoom: 11
+  });
 
-  // --- MODIFICATION: Create GeoJSON for the selected route ---
   const routeGeoJson = useMemo(() => {
-    // We use the *internal* selectedRide state object here
-    if (selectedRide) {
-      return createGeoJSONFeature(selectedRide.routeId as Route);
-    }
+    if (selectedRide) return createGeoJSONFeature(selectedRide.routeId as Route);
     return null;
-  }, [selectedRide]); // Re-calculate when the selectedRide object changes
-  // --- END MODIFICATION ---
+  }, [selectedRide]);
 
-  // Set initial map center when rides prop changes
   useEffect(() => {
     if (rides.length > 0) {
       const firstRideWithLocation = rides.find(
@@ -80,35 +65,24 @@ const RideMap: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRideId }
           ...prev,
           latitude: firstRideWithLocation.currentLocation!.lat,
           longitude: firstRideWithLocation.currentLocation!.lng,
+          zoom: 12
         }));
       }
     }
   }, [rides]);
 
-  // Listen for real-time location updates
-  useEffect(() => {
-    if (!socket) return;
-    const handleLocationUpdate = (update: any) => {
-      // (This component expects the parent 'rides' prop to be updated)
-    };
-    socket.on('ride-location-update', handleLocationUpdate);
-    return () => {
-      socket.off('ride-location-update', handleLocationUpdate);
-    };
-  }, [socket]);
-
-  // Update selectedRide *object* when selectedRideId *prop* changes
   useEffect(() => {
     if (selectedRideId) {
       const ride = rides.find(r => r._id === selectedRideId);
       if (ride) {
         setSelectedRide(ride);
-        if (ride.currentLocation) {
+        if (ride.currentLocation && ride.currentLocation.lat && ride.currentLocation.lng) {
           setViewState((prev) => ({
             ...prev,
             latitude: ride.currentLocation!.lat,
             longitude: ride.currentLocation!.lng,
-            zoom: 14
+            zoom: 14,
+            transitionDuration: 1000 
           }));
         }
       }
@@ -117,15 +91,10 @@ const RideMap: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRideId }
     }
   }, [selectedRideId, rides]);
 
-  // Helper functions
-  const getBusNumber = (ride: ScheduledRide) => {
-    return typeof ride.busId === 'object' ? ride.busId.busNumber : 'Unknown';
-  };
-  const getRouteName = (ride: ScheduledRide) => {
-    return typeof ride.routeId === 'object' ? ride.routeId.routeName : 'Unknown';
-  };
+  // Helpers
+  const getBusNumber = (ride: ScheduledRide) => typeof ride.busId === 'object' ? (ride.busId as any).busNumber : 'Unknown';
+  const getRouteName = (ride: ScheduledRide) => typeof ride.routeId === 'object' ? (ride.routeId as any).routeName : 'Unknown';
 
-  // Create Marker components
   const markers = useMemo(() => 
     rides
       .filter(ride => ride.currentLocation && ride.currentLocation.lat && ride.currentLocation.lng)
@@ -141,10 +110,10 @@ const RideMap: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRideId }
           }}
         >
           <div 
-            className="p-1.5 rounded-full shadow-lg cursor-pointer hover:scale-110 transition-transform animate-pulse"
+            className="p-2 rounded-full shadow-lg cursor-pointer hover:scale-110 transition-transform animate-pulse"
             style={{ 
               backgroundColor: getRideColor(ride.status),
-              border: '2px solid white'
+              border: `2px solid ${THEME_DARK}`
             }}
           >
             <BusFront className="w-5 h-5 text-white" />
@@ -153,48 +122,37 @@ const RideMap: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRideId }
       )), [rides]
   );
 
-  if (isLoading) {
-    // ... (no change)
-  }
-  if (error) {
-    // ... (no change)
-  }
   if (!config.MAPBOX_TOKEN) {
-    // ... (no change)
+    return <div className="w-full h-full flex items-center justify-center bg-[#1A1640] text-gray-500">Mapbox token missing</div>;
   }
 
   return (
-    <div className="w-full h-[500px] rounded-lg overflow-hidden shadow-lg border border-gray-200">
+    <div className="w-full h-full rounded-2xl overflow-hidden shadow-inner border border-white/10 relative bg-[#1A1640]">
       <Map
         {...viewState}
         onMove={(evt) => setViewState(evt.viewState)}
         mapboxAccessToken={config.MAPBOX_TOKEN}
-        style={{ width: '100%', height: '1Git' }}
-        mapStyle="mapbox://styles/mapbox/streets-v12"
+        style={{ width: '100%', height: '100%' }}
+        mapStyle="mapbox://styles/mapbox/dark-v11" /* Using Dark Mode Map Style */
       >
-        {/* --- ADD THIS: Render the route line --- */}
         {routeGeoJson && (
           <Source id="route-line" type="geojson" data={routeGeoJson}>
             <Layer
               id="route"
               type="line"
-              layout={{
-                'line-join': 'round',
-                'line-cap': 'round',
-              }}
+              layout={{ 'line-join': 'round', 'line-cap': 'round' }}
               paint={{
-                'line-color': '#0B79D3',
+                'line-color': THEME_PURPLE,
                 'line-width': 5,
                 'line-opacity': 0.8,
+                'line-blur': 1
               }}
             />
           </Source>
         )}
-        {/* --- END ADD --- */}
         
         {markers}
 
-        {/* --- FIX: Added specific checks for .lng and .lat --- */}
         {selectedRide && 
          selectedRide.currentLocation &&
          selectedRide.currentLocation.lng &&
@@ -205,31 +163,30 @@ const RideMap: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRideId }
             latitude={selectedRide.currentLocation.lat}
             onClose={() => setSelectedRide(null)}
             closeOnClick={false}
+            offset={15}
+            className="rounded-xl overflow-hidden"
+            maxWidth="250px"
           >
-            <div className="p-2">
-              <h3 className="text-base font-bold text-indigo-700 mb-1">
+            {/* Custom Dark Popup Content */}
+            <div className="p-1 min-w-[180px] bg-[#0D0A2A] text-white">
+              <h3 className="text-base font-bold text-[#B045FF] mb-1">
                 {getBusNumber(selectedRide)}
               </h3>
-              <p className="text-sm mb-1">
-                <span className="font-medium">Status:</span>{' '}
-                <span 
-                  className="font-semibold" 
-                  style={{ color: getRideColor(selectedRide.status) }}
-                >
-                  {selectedRide.status}
-                </span>
-              </p>
-              <p className="text-xs text-gray-600">
-                <span className="font-medium">Route:</span> {getRouteName(selectedRide)}
-              </p>
-              <p className="text-xs text-gray-600">
-                <span className="font-medium">Time:</span> {selectedRide.departureTime}
-              </p>
-              {selectedRide.currentLocation.timestamp && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Updated: {new Date(selectedRide.currentLocation.timestamp).toLocaleTimeString()}
+              
+              <div className="space-y-1">
+                <p className="text-sm">
+                  <span className="font-medium text-gray-400">Status:</span>{' '}
+                  <span className="font-bold text-xs px-2 py-0.5 rounded-full text-black" style={{ backgroundColor: getRideColor(selectedRide.status) }}>
+                    {selectedRide.status}
+                  </span>
                 </p>
-              )}
+                <p className="text-xs text-gray-300">
+                  <span className="font-medium text-gray-500">Route:</span> {getRouteName(selectedRide)}
+                </p>
+                <p className="text-xs text-gray-300">
+                  <span className="font-medium text-gray-500">Time:</span> {selectedRide.departureTime}
+                </p>
+              </div>
             </div>
           </Popup>
         )}

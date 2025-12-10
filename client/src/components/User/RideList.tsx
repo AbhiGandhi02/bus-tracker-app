@@ -1,19 +1,18 @@
 import React from 'react';
 import { ScheduledRide, RideListProps, BusMaster, Route, RideStatus } from '../../types';
-import { Clock, ArrowRight, MapPin, Calendar, Check } from 'lucide-react';
+import { Clock, ArrowRight, MapPin, Calendar, Check, AlertCircle } from 'lucide-react';
 
-// --- NEW: Define component-specific props ---
-// This adds the new props we need from ViewSchedule.tsx
 interface UpdatedRideListProps extends RideListProps {
   isToday: boolean;
   selectedDate: Date;
 }
 
+// Updated Status Pills for Dark Mode (Neon/Glassy look)
 const statusPillStyles: Record<RideStatus, string> = {
-  'Scheduled': 'bg-blue-100 text-blue-800',
-  'In Progress': 'bg-yellow-100 text-yellow-800',
-  'Completed': 'bg-green-100 text-green-800',
-  'Cancelled': 'bg-red-100 text-red-800',
+  'Scheduled': 'bg-blue-500/10 text-blue-300 border border-blue-500/20',
+  'In Progress': 'bg-yellow-500/10 text-yellow-300 border border-yellow-500/20 animate-pulse',
+  'Completed': 'bg-green-500/10 text-green-300 border border-green-500/20',
+  'Cancelled': 'bg-red-500/10 text-red-300 border border-red-500/20',
 };
 
 // --- Helper component for the link text ---
@@ -22,16 +21,16 @@ const RideLinkText: React.FC<{ ride: ScheduledRide; isToday: boolean }> = ({ rid
   
   if (isTracking) {
     return (
-      <div className="text-xs font-semibold flex items-center gap-1 text-green-600 animate-pulse">
+      <div className="text-xs font-bold flex items-center gap-1 text-[#B045FF] drop-shadow-[0_0_8px_rgba(176,69,255,0.6)]">
         <MapPin className="w-4 h-4" />
-        Track Live
+        TRACK LIVE
       </div>
     );
   }
   
   if (ride.status === 'Scheduled') {
     return (
-      <div className="text-xs font-semibold flex items-center gap-1 text-indigo-600">
+      <div className="text-xs font-medium flex items-center gap-1 text-gray-400 group-hover:text-white transition-colors">
         <Calendar className="w-3 h-3" />
         View Schedule
       </div>
@@ -40,16 +39,15 @@ const RideLinkText: React.FC<{ ride: ScheduledRide; isToday: boolean }> = ({ rid
   
   if (ride.status === 'Completed') {
      return (
-      <div className="text-xs font-semibold flex items-center gap-1 text-gray-500">
+      <div className="text-xs font-medium flex items-center gap-1 text-gray-500">
         <Check className="w-3 h-3" />
-        View Summary
+        Run Completed
       </div>
     );
   }
   
-  // Default for Cancelled or other states
   return (
-    <div className="text-xs font-semibold flex items-center gap-1 text-gray-500">
+    <div className="text-xs font-medium flex items-center gap-1 text-gray-500">
       View Details
       <ArrowRight className="w-3 h-3" />
     </div>
@@ -59,39 +57,40 @@ const RideLinkText: React.FC<{ ride: ScheduledRide; isToday: boolean }> = ({ rid
 
 const RideList: React.FC<UpdatedRideListProps> = ({ rides, onSelectRide, isToday, selectedDate }) => {
   
-  // --- THIS IS THE FIX ---
-  // Show a dynamic message if no rides are found
+  // Empty State - Dark Theme
   if (rides.length === 0) {
     const dateString = selectedDate.toLocaleDateString('en-US', {
       month: 'long', day: 'numeric'
     });
 
     return (
-      <div className="bg-white rounded-xl p-6 h-full flex flex-col items-center justify-center text-center">
-        <Calendar className="w-16 h-16 text-gray-300 mb-4" />
-        <h3 className="text-gray-800 text-lg font-semibold">No Rides Scheduled</h3>
-        <p className="text-gray-500 text-sm">
-          There are no buses scheduled for {isToday ? 'today' : dateString}.
+      <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-8 h-64 flex flex-col items-center justify-center text-center shadow-lg">
+        <div className="bg-white/5 p-4 rounded-full mb-4">
+            <Calendar className="w-8 h-8 text-gray-400" />
+        </div>
+        <h3 className="text-white text-lg font-semibold mb-1">No Rides Scheduled</h3>
+        <p className="text-gray-400 text-sm max-w-xs mx-auto">
+          We couldn't find any buses scheduled for {isToday ? <span className="text-[#B045FF] font-medium">today</span> : dateString}.
         </p>
       </div>
     );
   }
-  // --- END OF FIX ---
 
   return (
-    <div className="bg-white rounded-xl h-full flex flex-col">
+    <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-        <h2 className="font-bold text-gray-800">{isToday ? "Today's" : "Schedule"}</h2>
-        <span className="bg-gray-100 text-gray-600 text-xs font-medium px-2.5 py-0.5 rounded-full">
+      <div className="flex justify-between items-center mb-4 px-2">
+        <h2 className="font-semibold text-gray-300 text-sm uppercase tracking-wider">
+            {isToday ? "Today's Trips" : "Upcoming Trips"}
+        </h2>
+        <span className="bg-[#4A1F8A]/30 border border-[#4A1F8A]/50 text-purple-200 text-xs font-medium px-2.5 py-0.5 rounded-full">
           {rides.length} {rides.length === 1 ? 'ride' : 'rides'}
         </span>
       </div>
       
       {/* List of Rides */}
-      <div className="overflow-y-auto p-4 space-y-3 flex-1">
+      <div className="overflow-y-auto space-y-4 pb-20 pr-1 custom-scrollbar">
         {rides.map((ride) => {
-          // Handle cases where data might not be populated (though it should be)
           const bus = ride.busId as BusMaster;
           const route = ride.routeId as Route;
 
@@ -99,29 +98,32 @@ const RideList: React.FC<UpdatedRideListProps> = ({ rides, onSelectRide, isToday
             <div
               key={ride._id}
               onClick={() => onSelectRide(ride._id)} 
-              className="p-4 rounded-xl border-2 transition-all cursor-pointer border-gray-100 hover:border-indigo-200 hover:bg-gray-50"
+              className="group relative bg-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10 cursor-pointer transition-all duration-200 hover:bg-white/10 hover:border-[#B045FF]/50 hover:shadow-[0_0_20px_rgba(176,69,255,0.15)]"
             >
-              <div className="flex justify-between items-start mb-3">
+              <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-1">
                     {route?.routeNumber || '...'}
-                    <span className="font-normal text-gray-500">•</span>
-                    {bus?.busNumber || '...'}
+                    <span className="text-gray-600 text-sm">•</span>
+                    <span className="text-gray-300 font-medium text-base">{bus?.busNumber || '...'}</span>
                   </h3>
-                  <p className="text-sm text-gray-500">{route?.routeName || 'Unknown Route'}</p>
+                  <p className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
+                    {route?.routeName || 'Unknown Route'}
+                  </p>
                 </div>
-                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusPillStyles[ride.status]}`}>
-                  {ride.status}
+                 <span className={`px-2.5 py-1 rounded-md text-xs font-semibold tracking-wide ${statusPillStyles[ride.status]}`}>
+                  {ride.status.toUpperCase()}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-1.5 text-gray-700 font-medium">
-                  <Clock className="w-4 h-4 text-gray-400" />
+              <div className="flex items-center justify-between text-sm pt-4 border-t border-white/5">
+                <div className="flex items-center gap-2 text-gray-300 font-medium">
+                  <div className="p-1.5 bg-[#4A1F8A]/30 rounded-full">
+                    <Clock className="w-3.5 h-3.5 text-[#B045FF]" />
+                  </div>
                   {ride.departureTime}
                 </div>
                 
-                {/* Use the helper to show the correct link text */}
                 <RideLinkText ride={ride} isToday={isToday} />
               </div>
             </div>

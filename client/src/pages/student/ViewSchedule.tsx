@@ -1,18 +1,20 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import RideList from '../../components/User/RideList';
-import Button from '../../components/common/Button';
 import { scheduledRideAPI } from '../../services/api';
 import { ScheduledRide, RideStatusUpdate, RideLocationUpdate } from '../../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Loader from '../../components/common/Loader';
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, } from 'lucide-react';
 import { useSocket } from '../../context/SocketContext';
+import Navbar from '../../components/layout/Navbar';
 
-// --- Helper Functions ---
+const BusBuddyLogo = '/images/BusBuddyLogo.png';
+
+// --- Helper Functions (No changes here) ---
 const getToday = (): Date => {
   const today = new Date();
-  today.setHours(0, 0, 0, 0); // Normalize to start of day
+  today.setHours(0, 0, 0, 0);
   return today;
 };
 
@@ -31,33 +33,31 @@ const formatDateForDisplay = (date: Date): string => {
 
 const isSameDay = (date1: Date, date2: Date): boolean => {
   return date1.getFullYear() === date2.getFullYear() &&
-         date1.getMonth() === date2.getMonth() &&
-         date1.getDate() === date2.getDate();
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate();
 };
 
 const parseDateFromQuery = (dateQuery: string | null): Date => {
   if (dateQuery) {
     const date = new Date(dateQuery);
-    // Check if date is valid. Note: NaNs are tricky.
     if (!isNaN(date.getTime())) {
-      date.setHours(0, 0, 0, 0); // Normalize
+      date.setHours(0, 0, 0, 0);
       return date;
     }
   }
-  return getToday(); // Default to today
+  return getToday();
 };
 // --- END HELPER FUNCTIONS ---
-
 
 const ViewSchedule: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams(); // Get URL params
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [rides, setRides] = useState<ScheduledRide[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   const [selectedDate, setSelectedDate] = useState<Date>(
     parseDateFromQuery(searchParams.get('date'))
   );
@@ -72,12 +72,11 @@ const ViewSchedule: React.FC = () => {
       setLoading(true);
       setError('');
       const dateString = formatDateForAPI(selectedDate);
-      
-      // Ensure URL matches state
+
       setSearchParams({ date: dateString });
 
       const response = await scheduledRideAPI.getByDate(dateString);
-      
+
       if (response.data.success && response.data.data) {
         setRides(response.data.data);
       } else {
@@ -97,23 +96,20 @@ const ViewSchedule: React.FC = () => {
 
   // --- Socket logic ---
   useEffect(() => {
-    // Only listen for live updates if the selected date is today
     if (!socket || !isToday) {
       return;
     }
     const handleStatusUpdate = (update: RideStatusUpdate) => {
-      console.log('[Socket] Student View received ride-status-update:', update);
-      setRides(prevRides => 
-        prevRides.map(ride => 
+      setRides(prevRides =>
+        prevRides.map(ride =>
           ride._id === update.rideId ? { ...ride, status: update.status } : ride
         )
       );
     };
     const handleLocationUpdate = (update: RideLocationUpdate) => {
-      // Also update status to 'In Progress' if location comes in
-      setRides(prevRides => 
-        prevRides.map(ride => 
-          ride._id === update.rideId 
+      setRides(prevRides =>
+        prevRides.map(ride =>
+          ride._id === update.rideId
             ? { ...ride, currentLocation: update.location, status: 'In Progress' }
             : ride
         )
@@ -127,7 +123,7 @@ const ViewSchedule: React.FC = () => {
       socket.off('ride-status-update', handleStatusUpdate);
       socket.off('ride-location-update', handleLocationUpdate);
     };
-  }, [socket, isToday]); // Only re-subscribe if socket or isToday changes
+  }, [socket, isToday]);
 
   const handleLogout = async () => {
     await logout();
@@ -141,7 +137,6 @@ const ViewSchedule: React.FC = () => {
     }
   };
 
-  // --- Date Navigation Handlers ---
   const changeDay = (days: number) => {
     setSelectedDate(prevDate => {
       const newDate = new Date(prevDate);
@@ -153,83 +148,93 @@ const ViewSchedule: React.FC = () => {
   const goToToday = () => {
     setSelectedDate(getToday());
   };
-  // --- END Handlers ---
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* Navbar */}
-      <nav className="bg-indigo-600 text-white shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <span className="text-2xl">🚌</span>
-            <h1 className="text-xl font-bold">College Bus Tracker</h1>
-          </div>
-          <div className="flex items-center space-x-4">
-            <span className="hidden sm:block opacity-90 text-sm">
-              Hi, {user?.name?.split(' ')[0]}
-            </span>
-            <Button 
-              variant="secondary" 
-              onClick={handleLogout} 
-              className="text-xs py-1.5 px-3 bg-white/10 text-white border-white/20 hover:bg-white/20"
-            >
-              Logout
-            </Button>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-[#0D0A2A] text-white flex flex-col font-sans selection:bg-[#B045FF] selection:text-white relative overflow-hidden">
+
+      {/* Background Decor (Blobs) */}
+      <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0">
+        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-[#4A1F8A] blur-[120px] opacity-20 animate-pulse"></div>
+        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[#B045FF] blur-[120px] opacity-10"></div>
+      </div>
+
+      <Navbar
+        user={user}
+        handleLogout={handleLogout}
+        BusBuddyLogo={BusBuddyLogo}
+        portalName="Student Portal"
+      />
 
       {/* Main Content */}
-      <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Bus Schedule</h2>
-          
+      <main className="relative z-10 flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="mb-8">
+          <div className="flex items-end justify-between mb-6">
+            <div>
+              <h2 className="text-3xl font-bold text-white">Your Schedule</h2>
+              <p className="text-gray-400 text-sm mt-1">Check upcoming rides and track your bus.</p>
+            </div>
+          </div>
+
           {/* Date Navigation UI */}
-          <div className="mt-4 flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-gray-200">
-            <Button variant="outline" onClick={() => changeDay(-1)} className="!px-3">
+          <div className="flex items-center justify-between bg-white/5 backdrop-blur-sm p-2 rounded-2xl border border-white/10 shadow-lg">
+            <button
+              onClick={() => changeDay(-1)}
+              className="p-3 rounded-xl hover:bg-[#B045FF]/20 text-white transition-colors active:scale-95"
+            >
               <ChevronLeft className="w-5 h-5" />
-            </Button>
-            <div className="flex-1 text-center">
-              <span className="font-semibold text-lg text-gray-800">
+            </button>
+
+            <div className="flex-1 text-center flex flex-col items-center justify-center">
+              <span className="font-semibold text-lg text-white tracking-wide">
                 {formatDateForDisplay(selectedDate)}
               </span>
               {!isToday && (
-                <Button variant="secondary" onClick={goToToday} className="ml-3 text-xs !py-1 !px-2">
-                  <Calendar className="w-3 h-3 mr-1" />
-                  Go to Today
-                </Button>
+                <button
+                  onClick={goToToday}
+                  className="mt-1 flex items-center gap-1 text-[10px] text-[#B045FF] font-bold uppercase tracking-wider hover:text-[#c472ff] transition-colors bg-[#B045FF]/10 px-2 py-0.5 rounded-full"
+                >
+                  Jump to Today
+                </button>
               )}
             </div>
-            <Button variant="outline" onClick={() => changeDay(1)} className="!px-3">
+
+            <button
+              onClick={() => changeDay(1)}
+              className="p-3 rounded-xl hover:bg-[#B045FF]/20 text-white transition-colors active:scale-95"
+            >
               <ChevronRight className="w-5 h-5" />
-            </Button>
+            </button>
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md shadow-sm">
-            <p className="font-medium">Error</p>
-            <p className="text-sm">{error}</p>
+          <div className="bg-red-500/10 border border-red-500/20 text-red-200 p-4 mb-6 rounded-xl shadow-sm backdrop-blur-sm flex items-start gap-3">
+            <div className="p-1 bg-red-500/20 rounded-full mt-0.5">
+              <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+            </div>
+            <div>
+              <p className="font-semibold text-sm">Unable to sync schedule</p>
+              <p className="text-xs opacity-80 mt-1">{error}</p>
+            </div>
           </div>
         )}
 
-        {/* --- THIS IS THE FIX --- */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-[calc(100vh-250px)]">
+        {/* List Container */}
+        <div className="h-[calc(100vh-280px)]">
           {loading ? (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center h-64">
               <Loader size="lg" />
             </div>
           ) : (
-            <RideList 
-              rides={rides} 
+            <RideList
+              rides={rides}
               onSelectRide={handleRideSelect}
               isToday={isToday}
-              selectedDate={selectedDate} 
+              selectedDate={selectedDate}
             />
           )}
         </div>
-        {/* --- END OF FIX --- */}
-        
+
       </main>
     </div>
   );

@@ -3,11 +3,12 @@ import { ScheduledRide, BusMaster, Route, RideLocation } from '../../types';
 import { scheduledRideAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import Loader from '../../components/common/Loader';
-import Button from '../../components/common/Button';
-import { MapPin, PlayCircle, StopCircle, LogOut } from 'lucide-react';
+import { PlayCircle, StopCircle, Navigation, Clock, Radio, ArrowLeft } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import Navbar from '../../components/layout/Navbar';
+const BusBuddyLogo = '/images/BusBuddyLogo.png';
 
-// Helper to format date
+// --- HELPER: Date Formatting ---
 const getTodayString = (): string => {
   const today = new Date();
   const year = today.getFullYear();
@@ -27,10 +28,9 @@ const DriverDashboard: React.FC = () => {
   const [trackingRideId, setTrackingRideId] = useState<string | null>(null);
   const [lastLocation, setLastLocation] = useState<RideLocation | null>(null);
   
-  // Ref to store the watchPosition ID
   const watchIdRef = useRef<number | null>(null);
 
-  // Fetch only 'In Progress' or 'Scheduled' rides for today
+  // --- API: Fetch Rides ---
   const fetchRides = useCallback(async () => {
     try {
       setLoading(true);
@@ -39,7 +39,6 @@ const DriverDashboard: React.FC = () => {
       const response = await scheduledRideAPI.getByDate(today);
 
       if (response.data.success && response.data.data) {
-        // Filter for rides that the driver can actually track
         const trackableRides = response.data.data.filter(
           ride => ride.status === 'In Progress' || ride.status === 'Scheduled'
         );
@@ -52,13 +51,18 @@ const DriverDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []); // Empty dependency array is correct here
+  }, []);
 
   useEffect(() => {
     fetchRides();
-  }, [fetchRides]); // Use the callback function
+  }, [fetchRides]);
 
-  // Wrap stopTracking in useCallback
+  const handleStartClick = () => {
+    // simply redirect to the dashboard with the rideId as a query param
+    navigate(`/driver`);
+  };
+      
+  // --- TRACKING LOGIC ---
   const stopTracking = useCallback(() => {
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
@@ -66,9 +70,8 @@ const DriverDashboard: React.FC = () => {
     }
     setTrackingRideId(null);
     setLastLocation(null);
-  }, []); // State setters and refs don't need to be dependencies
+  }, []);
 
-  // Wrap startTracking in useCallback
   const startTracking = useCallback((rideId: string) => {
     if (watchIdRef.current !== null) {
       stopTracking();
@@ -76,7 +79,6 @@ const DriverDashboard: React.FC = () => {
 
     setTrackingRideId(rideId);
     
-    // Check if geolocation is available
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by your browser.');
       return;
@@ -98,133 +100,252 @@ const DriverDashboard: React.FC = () => {
       
       setLastLocation(newLocation);
       
-      // Send to backend
       scheduledRideAPI.updateLocation(rideId, newLocation)
         .catch(err => {
-          // Non-fatal error, log it
           console.error("Failed to send location update:", err);
-          setError("Failed to send location update. Check connection.");
         });
     };
 
     const onError = (err: GeolocationPositionError) => {
       console.error(`Geolocation error (${err.code}): ${err.message}`);
       setError(`Geolocation error: ${err.message}. Please enable location permissions.`);
-      stopTracking(); // Stop if there's an error
+      stopTracking();
     };
 
-    // Start watching position
     watchIdRef.current = navigator.geolocation.watchPosition(onSuccess, onError, options);
     
-    // Also mark the ride as 'In Progress' via API immediately
+    // Optimistic update
     scheduledRideAPI.update(rideId, { status: 'In Progress' })
-      .then(() => fetchRides()); // Refresh list
-  }, [stopTracking, fetchRides]); // Add dependencies
+      .then(() => fetchRides());
+  }, [stopTracking, fetchRides]);
 
-  // Auto-start tracking useEffect
+  // --- AUTO START FROM URL ---
   useEffect(() => {
     const rideIdFromUrl = searchParams.get('rideId');
-    if (rideIdFromUrl) {
-      // Check if we are already tracking this ride
-      if (trackingRideId !== rideIdFromUrl) {
-         startTracking(rideIdFromUrl);
-      }
+    if (rideIdFromUrl && trackingRideId !== rideIdFromUrl) {
+       startTracking(rideIdFromUrl);
     }
-  // Add 'startTracking' to dependency array
-  }, [searchParams, trackingRideId, startTracking]); 
+  }, [searchParams, trackingRideId, startTracking]);
 
-  const handleLogout = async () => {
-    stopTracking(); // Stop tracking on logout
-    await logout();
-    navigate('/login');
-  };
 
-  // --- Render Logic ---
-
-  if (loading) {
-    return <div className="h-screen flex items-center justify-center"><Loader size="lg" /></div>;
-  }
-  
+  // --- RENDER HELPERS ---
   const trackingRide = rides.find(r => r._id === trackingRideId);
 
+  if (loading && !rides.length) {
+    return (
+      <div className="h-screen w-full bg-[#0D0A2A] flex flex-col items-center justify-center gap-4">
+        <Loader size="lg"/>
+        <p className="text-gray-400 animate-pulse">Loading Dashboard...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-4">
-      {/* Header */}
-      <header className="flex justify-between items-center pb-4 border-b border-gray-700">
-        <div>
-          <h1 className="text-2xl font-bold text-yellow-400">Driver Dashboard</h1>
-          <p className="text-sm text-gray-400">Welcome, {user?.name?.split(' ')[0]}</p>
-        </div>
-        <button onClick={handleLogout} className="flex items-center gap-2 text-red-400 hover:text-red-300">
-          <LogOut className="w-5 h-5" />
-          <span>Logout</span>
-        </button>
-      </header>
+    <div className="min-h-screen bg-[#0D0A2A] text-white">
+      
+      <Navbar 
+        user={user} 
+        handleLogout={async () => {
+          stopTracking();
+          await logout();
+          navigate('/login');
+        }}
+        BusBuddyLogo={BusBuddyLogo}
+        portalName="Driver Portal"
+      />
 
-      {error && (
-        <div className="bg-red-900 border border-red-700 text-red-200 p-4 rounded-lg my-4">
-          <p className="font-bold">Error</p>
-          <p>{error}</p>
+      <main className="pt-32 px-4 pb-20 max-w-3xl mx-auto">
+        
+        {/* BACK BUTTON */}
+        <div className="flex items-center gap-4 mb-6">
+          <button 
+            onClick={() => navigate('/')} 
+            className="p-2 bg-white/5 border border-white/10 rounded-full hover:bg-white/10 text-gray-200 transition-all group"
+          >
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          </button>
+          <h1 className="text-xl font-bold text-white tracking-wide">
+            Dashboard Overview
+          </h1>
         </div>
-      )}
 
-      {/* Main Content */}
-      <main className="mt-6">
-        {/* Current Tracking Card */}
+        {/* --- ERROR ALERT --- */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3 text-red-300 animate-in fade-in slide-in-from-top-4">
+            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <p className="text-sm font-medium">{error}</p>
+          </div>
+        )}
+
         {trackingRide ? (
-          <div className="bg-gray-800 p-6 rounded-xl shadow-lg border border-yellow-400">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold">Currently Tracking</h2>
-              <span className="flex items-center gap-2 text-green-400 animate-pulse">
-                <MapPin className="w-5 h-5" />
-                LIVE
+          /* --- ACTIVE TRACKING CARD (unchanged) --- */
+          <div className="relative overflow-hidden bg-[#1A1640] rounded-3xl border-2 border-[#B045FF]/50 shadow-[0_0_50px_-12px_rgba(176,69,255,0.3)] p-6 md:p-8">
+             <div className="absolute top-0 right-0 w-64 h-64 bg-[#B045FF]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+
+            {/* Status Indicator */}
+            <div className="flex justify-between items-start mb-6 relative z-10">
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Current Status</span>
+                <h2 className="text-2xl font-bold text-white">Tracking Active</h2>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/20 border border-green-500/30 rounded-full">
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+                <span className="text-xs font-bold text-green-400 tracking-wider">LIVE</span>
+              </div>
+            </div>
+
+            {/* Bus & Route Details */}
+            <div className="grid gap-6 mb-8 relative z-10">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-[#B045FF]/20 flex items-center justify-center text-[#B045FF] border border-[#B045FF]/30">
+                  <span className="text-2xl">🚌</span>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Bus Number</p>
+                  <p className="text-2xl font-bold text-white tracking-tight">{(trackingRide.busId as BusMaster).busNumber}</p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                <div className="flex items-center gap-3 mb-2">
+                  <Navigation className="w-5 h-5 text-gray-400" />
+                  <span className="text-sm text-gray-300 font-medium">Route Information</span>
+                </div>
+                <p className="text-lg font-semibold text-white pl-8">{(trackingRide.routeId as Route).routeName}</p>
+              </div>
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-black/20 rounded-lg">
+                  <p className="text-xs text-gray-500 uppercase">Latitude</p>
+                  <p className="font-mono text-[#B045FF]">{lastLocation?.lat.toFixed(6) || '...'}</p>
+                </div>
+                <div className="p-3 bg-black/20 rounded-lg">
+                  <p className="text-xs text-gray-500 uppercase">Longitude</p>
+                  <p className="font-mono text-[#B045FF]">{lastLocation?.lng.toFixed(6) || '...'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <button
+              onClick={stopTracking}
+              className="w-full py-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-lg shadow-lg hover:shadow-red-500/25 transition-all flex items-center justify-center gap-3 relative z-10 group"
+            >
+              <StopCircle className="w-6 h-6 group-hover:scale-110 transition-transform" />
+              Stop Tracking
+            </button>
+          </div>
+
+        ) : (
+          /* --- ELEGANT RIDE SELECTION LIST --- */
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                <Radio className="w-5 h-5 text-[#B045FF]" />
+                Select a Ride
+              </h2>
+              <span className="text-xs px-2 py-1 bg-white/10 rounded text-gray-400">
+                {rides.length} Available
               </span>
             </div>
-            <div className="mt-4">
-              <p className="text-xl font-bold">🚌 {(trackingRide.busId as BusMaster).busNumber}</p>
-              <p className="text-gray-300">{(trackingRide.routeId as Route).routeName}</p>
-            </div>
-            <div className="mt-4 text-xs text-gray-400">
-              <p>Lat: {lastLocation?.lat.toFixed(6) || '...'}</p>
-              <p>Lng: {lastLocation?.lng.toFixed(6) || '...'}</p>
-            </div>
-            <Button 
-              variant="danger" 
-              onClick={stopTracking} 
-              fullWidth 
-              className="mt-6 !bg-red-600 hover:!bg-red-700"
-            >
-              <StopCircle className="w-5 h-5 mr-2" />
-              Stop Tracking
-            </Button>
-          </div>
-        ) : (
-          // List of available rides
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-300">Select a ride to start tracking:</h2>
+
             {rides.length === 0 && !loading && (
-              <div className="bg-gray-800 p-6 rounded-xl text-center text-gray-400">
-                <p>No trackable rides (Scheduled or In Progress) for today.</p>
+              <div className="flex flex-col items-center justify-center p-10 bg-[#1A1640]/50 rounded-2xl border border-dashed border-gray-700 text-center">
+                <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                  <Clock className="w-8 h-8 text-gray-600" />
+                </div>
+                <h3 className="text-gray-300 font-medium mb-1">No Active Rides</h3>
+                <p className="text-sm text-gray-500 max-w-xs">
+                  There are no scheduled rides marked for today. Check back later or contact admin.
+                </p>
               </div>
             )}
             
-            {rides.map(ride => (
-              <div key={ride._id} className="bg-gray-800 p-4 rounded-lg shadow-md flex justify-between items-center">
-                <div>
-                  <p className="text-lg font-bold">🚌 {(ride.busId as BusMaster).busNumber}</p>
-                  <p className="text-sm text-gray-400">{(ride.routeId as Route).routeName}</p>
-                  <p className="text-sm text-gray-500">{ride.departureTime} - {ride.status}</p>
-                </div>
-                <Button 
-                  variant="primary" 
-                  onClick={() => startTracking(ride._id)}
-                  className="!bg-green-600 hover:!bg-green-700"
-                >
-                  <PlayCircle className="w-5 h-5 mr-2" />
-                  Start
-                </Button>
-              </div>
-            ))}
+            <div className="grid gap-5">
+              {rides.map(ride => {
+                  const route = ride.routeId as Route;
+                  const bus = ride.busId as BusMaster;
+                  
+                  return (
+                    <div 
+                      key={ride._id} 
+                      className="group relative overflow-hidden bg-gradient-to-br from-[#1A1640] to-[#0D0A2A] rounded-2xl border border-white/10 hover:border-[#B045FF]/40 shadow-xl transition-all duration-300"
+                    >
+                      {/* Status Strip on Left */}
+                      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${ride.status === 'In Progress' ? 'bg-green-500' : 'bg-blue-500'}`} />
+
+                      <div className="p-6">
+                        <div className="flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
+                          
+                          {/* 1. Time & Bus Info */}
+                          <div className="flex-1">
+                             <div className="flex items-center gap-3 mb-4">
+                                <div className="px-3 py-1 rounded bg-white/5 border border-white/10 text-xl font-bold font-mono text-white">
+                                  {ride.departureTime}
+                                </div>
+                                <span className={`text-xs font-bold px-2 py-1 rounded uppercase tracking-wider ${ride.status === 'In Progress' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                                  {ride.status}
+                                </span>
+                             </div>
+
+                             <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-[#B045FF]/10 flex items-center justify-center text-lg">
+                                  🚌
+                                </div>
+                                <div>
+                                  <h3 className="text-lg font-bold text-gray-200 leading-none mb-1">
+                                    {bus.busNumber}
+                                  </h3>
+                                  <p className="text-xs text-gray-500 uppercase font-semibold">
+                                    {bus.busType || 'Standard'} Bus
+                                  </p>
+                                </div>
+                             </div>
+                          </div>
+
+                          {/* 2. Visual Route Timeline */}
+                          <div className="flex-1 w-full md:w-auto border-l border-white/5 pl-4 md:pl-0 md:px-6 py-2">
+                             <div className="relative pl-6 space-y-6">
+                                {/* Vertical Dotted Line */}
+                                <div className="absolute left-[0.7rem] top-2 bottom-2 w-0.5 border-l-2 border-dashed border-gray-700" />
+                                
+                                {/* Start */}
+                                <div className="relative">
+                                  <div className="absolute -left-6 top-1 w-3 h-3 rounded-full bg-blue-500 border-2 border-[#0D0A2A]" />
+                                  <p className="text-xs text-gray-500 uppercase">Start</p>
+                                  <p className="text-sm font-semibold text-white truncate max-w-[200px]">{route.departureLocation}</p>
+                                </div>
+
+                                {/* End */}
+                                <div className="relative">
+                                  <div className="absolute -left-6 top-1 w-3 h-3 rounded-full bg-[#B045FF] border-2 border-[#0D0A2A]" />
+                                  <p className="text-xs text-gray-500 uppercase">End</p>
+                                  <p className="text-sm font-semibold text-white truncate max-w-[200px]">{route.arrivalLocation}</p>
+                                </div>
+                             </div>
+                          </div>
+
+                          {/* 3. Action Button */}
+                          <div className="w-full md:w-auto">
+                            <button 
+                              onClick={() => handleStartClick()}
+                              className="w-full md:w-32 h-12 rounded-xl bg-gradient-to-r from-[#B045FF] to-[#7c3aed] hover:from-[#c069ff] hover:to-[#8b5cf6] text-white font-bold shadow-lg shadow-[#B045FF]/20 hover:shadow-[#B045FF]/40 transform group-hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2"
+                            >
+                              <span>GO</span>
+                              <PlayCircle className="w-4 h-4 fill-white/20" />
+                            </button>
+                          </div>
+
+                        </div>
+                      </div>
+                    </div>
+                  );
+              })}
+            </div>
           </div>
         )}
       </main>

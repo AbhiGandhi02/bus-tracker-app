@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { BusMaster, BusMasterInput } from '../../types';
-import Button from '../common/Button';
-import Input from '../common/Input';
 import { busMasterAPI } from '../../services/api';
+import { Plus, Edit2, Trash2, Bus, User, X } from 'lucide-react'; // Added Icons
+import Loader from '../common/Loader';
 
 interface Props {
   buses: BusMaster[];
@@ -68,69 +68,166 @@ const BusMasterManagement: React.FC<Props> = ({ buses, onUpdate }) => {
 
   return (
     <div>
-      <div className="mb-4 flex justify-end">
-        <Button onClick={() => handleOpenModal()}>+ Add New Bus</Button>
+      {/* --- HEADER ACTIONS --- */}
+      <div className="mb-6 flex justify-between items-center">
+         <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Bus className="w-5 h-5 text-[#B045FF]" />
+            Active Fleet
+         </h2>
+         <button 
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 px-4 py-2 bg-[#B045FF] hover:bg-[#9d3ce3] text-white rounded-xl font-bold shadow-lg shadow-[#B045FF]/20 transition-all transform hover:-translate-y-0.5"
+         >
+            <Plus className="w-5 h-5" />
+            Add Bus
+         </button>
       </div>
 
-      <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bus Number</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Driver</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {buses.map((bus) => (
-              <tr key={bus._id}>
-                <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{bus.busNumber}</td>
-                
-                <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800`}>
-                    AC
-                  </span>
-                </td>
-                
-                <td className="px-6 py-4 whitespace-nowrap text-gray-500">{bus.driverName || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button onClick={() => handleOpenModal(bus)} className="text-indigo-600 hover:text-indigo-900 mr-4">Edit</button>
-                  <button onClick={() => handleDelete(bus._id)} className="text-red-600 hover:text-red-900">Delete</button>
-                </td>
-              </tr>
-            ))}
-            {buses.length === 0 && (
+      {/* --- TABLE CONTAINER --- */}
+      <div className="w-full bg-[#1A1640]/50 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden shadow-xl">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-white/10">
+            <thead className="bg-white/5">
               <tr>
-                <td colSpan={4} className="px-6 py-4 text-center text-gray-500">No buses found.</td>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Bus Number</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Type</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Assigned Driver</th>
+                <th className="px-6 py-4 text-right text-xs font-bold text-gray-400 uppercase tracking-wider">Actions</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {buses.map((bus) => (
+                <tr key={bus._id} className="hover:bg-white/5 transition-colors group">
+                  
+                  {/* Bus Number */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                     <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-[#B045FF]/10 border border-[#B045FF]/20 flex items-center justify-center text-[#B045FF] font-bold">
+                           {bus.busNumber.split(' ').pop()} {/* Just the number/last part */}
+                        </div>
+                        <span className="font-semibold text-white">{bus.busNumber}</span>
+                     </div>
+                  </td>
+                  
+                  {/* Type (Hardcoded as AC for now based on your code) */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-500/10 text-green-400 border border-green-500/20">
+                      Standard AC
+                    </span>
+                  </td>
+                  
+                  {/* Driver */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                     <div className="flex items-center gap-2 text-gray-300">
+                        <User className="w-4 h-4 text-gray-500" />
+                        {bus.driverName || <span className="text-gray-600 italic">Not Assigned</span>}
+                     </div>
+                  </td>
+                  
+                  {/* Actions */}
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="flex items-center justify-end gap-2 ">
+                       <button 
+                          onClick={() => handleOpenModal(bus)} 
+                          className="p-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-colors"
+                          title="Edit"
+                       >
+                          <Edit2 className="w-4 h-4" />
+                       </button>
+                       <button 
+                          onClick={() => handleDelete(bus._id)} 
+                          className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
+                          title="Delete"
+                       >
+                          <Trash2 className="w-4 h-4" />
+                       </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              
+              {buses.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                     <div className="flex flex-col items-center gap-2">
+                        <Bus className="w-8 h-8 text-gray-700" />
+                        <p>No buses found in the fleet.</p>
+                     </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
+      {/* --- DARK THEMED MODAL --- */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-medium mb-4">{editingBus ? 'Edit Bus' : 'Add New Bus'}</h3>
-            {error && <p className="text-red-600 mb-4 text-sm">{error}</p>}
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-[#1A1640] border border-white/10 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            
+            <div className="flex justify-between items-center mb-6">
+               <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  {editingBus ? <Edit2 className="w-5 h-5 text-[#B045FF]" /> : <Plus className="w-5 h-5 text-[#B045FF]" />}
+                  {editingBus ? 'Edit Bus Details' : 'Add New Bus'}
+               </h3>
+               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors">
+                  <X className="w-5 h-5" />
+               </button>
+            </div>
+
+            {error && (
+               <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-red-400 text-sm">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                  {error}
+               </div>
+            )}
+            
             <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                label="Bus Number"
-                required
-                value={formData.busNumber}
-                onChange={(e) => setFormData({ ...formData, busNumber: e.target.value })}
-              />
               
-              
-              <Input
-                label="Driver Name"
-                value={formData.driverName}
-                onChange={(e) => setFormData({ ...formData, driverName: e.target.value })}
-              />
-              <div className="mt-5 flex justify-end space-x-3">
-                <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-                <Button type="submit" isLoading={loading}>{editingBus ? 'Update' : 'Create'}</Button>
+              <div className="space-y-1">
+                 <label className="text-xs font-bold text-gray-400 uppercase">Bus Number</label>
+                 <div className="relative">
+                    <Bus className="absolute left-3 top-3.5 w-4 h-4 text-gray-500" />
+                    <input
+                       required
+                       value={formData.busNumber}
+                       onChange={(e) => setFormData({ ...formData, busNumber: e.target.value })}
+                       className="w-full bg-[#0D0A2A] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-[#B045FF] transition-colors"
+                       placeholder="e.g. BUS-101"
+                    />
+                 </div>
+              </div>
+
+              <div className="space-y-1">
+                 <label className="text-xs font-bold text-gray-400 uppercase">Default Driver (Optional)</label>
+                 <div className="relative">
+                    <User className="absolute left-3 top-3.5 w-4 h-4 text-gray-500" />
+                    <input
+                       value={formData.driverName}
+                       onChange={(e) => setFormData({ ...formData, driverName: e.target.value })}
+                       className="w-full bg-[#0D0A2A] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-[#B045FF] transition-colors"
+                       placeholder="e.g. John Doe"
+                    />
+                 </div>
+              </div>
+
+              <div className="mt-8 flex justify-end space-x-3 pt-4 border-t border-white/5">
+                <button 
+                  type="button" 
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  className="px-6 py-2 bg-[#B045FF] hover:bg-[#9d3ce3] text-white rounded-xl font-bold shadow-lg shadow-[#B045FF]/20 flex items-center gap-2"
+                >
+                  {loading && <Loader size="sm"/>}
+                  {editingBus ? 'Update Bus' : 'Add Bus'}
+                </button>
               </div>
             </form>
           </div>

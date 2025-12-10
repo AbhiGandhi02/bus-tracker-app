@@ -1,9 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { Route, RouteInput } from '../../types';
-import Button from '../common/Button';
-import Input from '../common/Input';
 import { routeAPI } from '../../services/api';
 import { Autocomplete } from '@react-google-maps/api';
+import { Plus, Edit2, Trash2, MapPin, Clock, Navigation, X } from 'lucide-react';
+import Loader from '../common/Loader'; // Ensure this handles dark mode or pass color
 
 interface Props {
   routes: Route[];
@@ -126,121 +126,225 @@ const RouteManagement: React.FC<Props> = ({ routes, onUpdate }) => {
 
   return (
     <div>
-      <div className="mb-4 flex justify-end">
-        <Button onClick={() => handleOpenModal()}>+ Add New Route</Button>
+      {/* --- HEADER ACTIONS --- */}
+      <div className="mb-6 flex justify-between items-center">
+         <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Navigation className="w-5 h-5 text-[#B045FF]" />
+            Active Routes
+         </h2>
+         <button 
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 px-4 py-2 bg-[#B045FF] hover:bg-[#9d3ce3] text-white rounded-xl font-bold shadow-lg shadow-[#B045FF]/20 transition-all transform hover:-translate-y-0.5"
+         >
+            <Plus className="w-5 h-5" />
+            Add Route
+         </button>
       </div>
 
-      <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-        {/* Added 'table-fixed' to respect column widths */}
-        <table className="min-w-full divide-y divide-gray-200 table-fixed">
-          <thead className="bg-gray-50">
-            <tr>
-              {/* --- THIS IS THE UI FIX --- */}
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[15%]">Route No</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[20%]">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[35%]">Locations</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">Duration</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-[20%]">Actions</th>
-              {/* --- END FIX --- */}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {routes.map((route) => (
-              <tr key={route._id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 truncate">{route.routeNumber}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 truncate">{route.routeName}</td>
-                
-                {/* --- THIS IS THE UI FIX --- */}
-                {/* Removed 'whitespace-nowrap' and 'max-w-xs' */}
-                {/* Added 'break-words' to allow wrapping */}
-                <td className="px-6 py-4 text-sm text-gray-500 break-words">
-                  <div 
-                    className="font-medium text-gray-900" 
-                    title={route.departureLocation}
-                  >
-                    <span className="text-gray-400">From: </span>
-                    {route.departureLocation}
-                  </div>
-                  <div 
-                    className="font-medium text-gray-900 mt-1" 
-                    title={route.arrivalLocation}
-                  >
-                    <span className="text-gray-400">To: </span>
-                    {route.arrivalLocation}
-                  </div>
-                </td>
-                {/* --- END FIX --- */}
-                
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{route.rideTime}</td>
-                
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button onClick={() => handleOpenModal(route)} className="text-indigo-600 hover:text-indigo-900 mr-4">Edit</button>
-                  <button onClick={() => handleDelete(route._id)} className="text-red-600 hover:text-red-900">Delete</button>
-                </td>
-              </tr>
-            ))}
-            {routes.length === 0 && (
+      {/* --- TABLE CONTAINER --- */}
+      <div className="w-full bg-[#1A1640]/50 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden shadow-xl">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-white/10 table-fixed">
+            <thead className="bg-white/5">
               <tr>
-                <td colSpan={5} className="px-6 py-4 text-center text-gray-500">No routes found.</td>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider w-[15%]">Route No</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider w-[20%]">Name</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider w-[40%]">Locations</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider w-[10%]">Duration</th>
+                <th className="px-6 py-4 text-right text-xs font-bold text-gray-400 uppercase tracking-wider w-[15%]">Actions</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {routes.map((route) => (
+                <tr key={route._id} className="hover:bg-white/5 transition-colors group">
+                  
+                  {/* Route Number */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                     <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-[#B045FF]/10 border border-[#B045FF]/20 flex items-center justify-center text-[#B045FF] font-bold text-xs">
+                           {route.routeNumber}
+                        </div>
+                     </div>
+                  </td>
+
+                  {/* Name */}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
+                    {route.routeName}
+                  </td>
+                  
+                  {/* Locations (From -> To) */}
+                  <td className="px-6 py-4 text-sm text-gray-300">
+                    <div className="flex flex-col gap-2 relative pl-4 border-l-2 border-dashed border-gray-700">
+                       {/* Departure */}
+                       <div className="relative">
+                          <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-blue-500 border-2 border-[#1A1640]" />
+                          <p className="text-xs text-gray-500 uppercase font-semibold">From</p>
+                          <p className="font-medium text-white line-clamp-1" title={route.departureLocation}>
+                             {route.departureLocation}
+                          </p>
+                       </div>
+                       
+                       {/* Arrival */}
+                       <div className="relative">
+                          <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-[#B045FF] border-2 border-[#1A1640]" />
+                          <p className="text-xs text-gray-500 uppercase font-semibold">To</p>
+                          <p className="font-medium text-white line-clamp-1" title={route.arrivalLocation}>
+                             {route.arrivalLocation}
+                          </p>
+                       </div>
+                    </div>
+                  </td>
+                  
+                  {/* Duration */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                     <div className="flex items-center gap-1.5 text-gray-400 bg-black/20 px-2 py-1 rounded-md w-fit">
+                        <Clock className="w-3 h-3" />
+                        <span className="text-xs font-mono">{route.rideTime} mins</span>
+                     </div>
+                  </td>
+                  
+                  {/* Actions */}
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="flex items-center justify-end gap-2 ">
+                       <button 
+                          onClick={() => handleOpenModal(route)} 
+                          className="p-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-colors"
+                          title="Edit"
+                       >
+                          <Edit2 className="w-4 h-4" />
+                       </button>
+                       <button 
+                          onClick={() => handleDelete(route._id)} 
+                          className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
+                          title="Delete"
+                       >
+                          <Trash2 className="w-4 h-4" />
+                       </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {routes.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                     <div className="flex flex-col items-center gap-2">
+                        <MapPin className="w-8 h-8 text-gray-700" />
+                        <p>No routes found. Create one to get started.</p>
+                     </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* --- MODAL --- */}
+      {/* --- DARK THEMED MODAL --- */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-medium mb-4">{editingRoute ? 'Edit Route' : 'Add New Route'}</h3>
-            {error && <p className="text-red-600 mb-4 text-sm">{error}</p>}
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-[#1A1640] border border-white/10 rounded-2xl max-w-lg w-full p-6 shadow-2xl">
+            
+            <div className="flex justify-between items-center mb-6">
+               <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  {editingRoute ? <Edit2 className="w-5 h-5 text-[#B045FF]" /> : <Plus className="w-5 h-5 text-[#B045FF]" />}
+                  {editingRoute ? 'Edit Route' : 'Add New Route'}
+               </h3>
+               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors">
+                  <X className="w-5 h-5" />
+               </button>
+            </div>
+
+            {error && (
+               <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-red-400 text-sm">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                  {error}
+               </div>
+            )}
+            
             <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                label="Route Number"
-                required
-                value={formData.routeNumber}
-                onChange={(e) => setFormData({ ...formData, routeNumber: e.target.value })}
-              />
-              <Input
-                label="Route Name"
-                required
-                value={formData.routeName}
-                onChange={(e) => setFormData({ ...formData, routeName: e.target.value })}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-400 uppercase">Route No</label>
+                    <input
+                       required
+                       value={formData.routeNumber}
+                       onChange={(e) => setFormData({ ...formData, routeNumber: e.target.value })}
+                       className="w-full bg-[#0D0A2A] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#B045FF] transition-colors"
+                       placeholder="e.g. 101"
+                    />
+                 </div>
+                 <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-400 uppercase">Route Name</label>
+                    <input
+                       required
+                       value={formData.routeName}
+                       onChange={(e) => setFormData({ ...formData, routeName: e.target.value })}
+                       className="w-full bg-[#0D0A2A] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#B045FF] transition-colors"
+                       placeholder="e.g. Downtown Express"
+                    />
+                 </div>
+              </div>
               
-              <Autocomplete
-                onLoad={(ref) => (departureAutocompleteRef.current = ref)}
-                onPlaceChanged={() => handlePlaceChanged('departure', departureAutocompleteRef)}
-              >
-                <Input
-                  label="Departure Location"
-                  required
-                  defaultValue={formData.departureLocation}
-                  placeholder="Type and select a location..."
-                />
-              </Autocomplete>
+              <div className="space-y-1">
+                 <label className="text-xs font-bold text-gray-400 uppercase">Departure</label>
+                 <Autocomplete
+                   onLoad={(ref) => (departureAutocompleteRef.current = ref)}
+                   onPlaceChanged={() => handlePlaceChanged('departure', departureAutocompleteRef)}
+                 >
+                   <input
+                     required
+                     defaultValue={formData.departureLocation}
+                     className="w-full bg-[#0D0A2A] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#B045FF] transition-colors"
+                     placeholder="Search departure location..."
+                   />
+                 </Autocomplete>
+              </div>
 
-              <Autocomplete
-                onLoad={(ref) => (arrivalAutocompleteRef.current = ref)}
-                onPlaceChanged={() => handlePlaceChanged('arrival', arrivalAutocompleteRef)}
-              >
-                <Input
-                  label="Arrival Location"
-                  required
-                  defaultValue={formData.arrivalLocation}
-                  placeholder="Type and select a location..."
-                />
-              </Autocomplete>
+              <div className="space-y-1">
+                 <label className="text-xs font-bold text-gray-400 uppercase">Arrival</label>
+                 <Autocomplete
+                   onLoad={(ref) => (arrivalAutocompleteRef.current = ref)}
+                   onPlaceChanged={() => handlePlaceChanged('arrival', arrivalAutocompleteRef)}
+                 >
+                   <input
+                     required
+                     defaultValue={formData.arrivalLocation}
+                     className="w-full bg-[#0D0A2A] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#B045FF] transition-colors"
+                     placeholder="Search arrival location..."
+                   />
+                 </Autocomplete>
+              </div>
 
-              <Input
-                label="Ride Duration (e.g., 45 mins)"
-                required
-                value={formData.rideTime}
-                onChange={(e) => setFormData({ ...formData, rideTime: e.target.value })}
-              />
-              <div className="mt-5 flex justify-end space-x-3">
-                <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-                <Button type="submit" isLoading={loading}>{editingRoute ? 'Update' : 'Create'}</Button>
+              <div className="space-y-1">
+                 <label className="text-xs font-bold text-gray-400 uppercase">Duration</label>
+                 <div className="relative">
+                    <Clock className="absolute left-3 top-3.5 w-4 h-4 text-gray-500" />
+                    <input
+                       required
+                       value={formData.rideTime}
+                       onChange={(e) => setFormData({ ...formData, rideTime: e.target.value })}
+                       className="w-full bg-[#0D0A2A] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-[#B045FF] transition-colors"
+                       placeholder="e.g. 45 mins"
+                    />
+                 </div>
+              </div>
+
+              <div className="mt-8 flex justify-end space-x-3 pt-4 border-t border-white/5">
+                <button 
+                  type="button" 
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  className="px-6 py-2 bg-[#B045FF] hover:bg-[#9d3ce3] text-white rounded-xl font-bold shadow-lg shadow-[#B045FF]/20 flex items-center gap-2"
+                >
+                  {loading && <Loader size="sm" />}
+                  {editingRoute ? 'Update Route' : 'Create Route'}
+                </button>
               </div>
             </form>
           </div>
