@@ -132,7 +132,7 @@ const RideMap: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRideId }
         {...viewState}
         onMove={(evt) => setViewState(evt.viewState)}
         mapboxAccessToken={config.MAPBOX_TOKEN}
-        style={{ width: '100%', height: '100%' }}
+        style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}
         mapStyle="mapbox://styles/mapbox/dark-v11" /* Using Dark Mode Map Style */
       >
         {routeGeoJson && (

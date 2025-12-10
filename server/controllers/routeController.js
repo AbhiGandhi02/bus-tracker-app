@@ -24,13 +24,16 @@ const googleMapsClient = new Client({});
 // Fetches an encoded polyline from Google Maps Directions API.
 const getPolylineForRoute = async (originCoords, destinationCoords) => {
   try {
+    const originString = `${originCoords.lat},${originCoords.lng}`;
+    const destString = `${destinationCoords.lat},${destinationCoords.lng}`;
+
     const response = await googleMapsClient.directions({
       params: {
-        origin: originCoords,
-        destination: destinationCoords,
+        origin: originString,
+        destination: destString,
         key: process.env.GOOGLE_MAPS_API_KEY,
       },
-      timeout: 1000, // Optional: timeout
+      timeout: 5000, 
     });
 
     // Get the encoded polyline string
@@ -40,6 +43,9 @@ const getPolylineForRoute = async (originCoords, destinationCoords) => {
     return null; // No route found
   } catch (error) {
     console.error('Google Maps API Error:', error.message);
+    if (error.response) {
+       console.error('API Response Data:', error.response.data);
+    }
     // Don't block the request, just return null
     return null;
   }

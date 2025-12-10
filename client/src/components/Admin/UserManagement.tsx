@@ -3,7 +3,7 @@ import { User } from '../../types';
 import { userAPI } from '../../services/api';
 import Loader from '../common/Loader';
 import { useAuth } from '../../context/AuthContext';
-import { Shield, User as UserIcon, Car, ChevronDown, Crown } from 'lucide-react'; // Added Crown for SuperAdmin
+import { Shield, User as UserIcon, Car, ChevronDown, Crown } from 'lucide-react';
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -35,17 +35,10 @@ const UserManagement: React.FC = () => {
   const handleRoleChange = async (userId: string, newRole: string) => {
     setUpdatingId(userId);
     try {
-      // 1. Pass newRole to API. 
-      // If your API expects a specific type, cast it here: (newRole as 'admin' | 'user' | 'driver')
-      // Otherwise, generic string usually works for the API call itself.
       await userAPI.updateRole(userId, newRole as any); 
-
-      // 2. Update Local State
       setUsers(prevUsers =>
         prevUsers.map(user =>
           user.id === userId 
-            // 3. THIS IS THE FIX: Cast 'newRole' to the type of user.role
-            // This tells TypeScript: "Trust me, this string is a valid role"
             ? { ...user, role: newRole as typeof user.role } 
             : user
         )
@@ -59,11 +52,15 @@ const UserManagement: React.FC = () => {
   };
 
   const getRoleBadge = (role: string) => {
-    switch (role) {
-      case 'superadmin': // --- NEW CASE ---
+    // --- FIX: Normalized string check to handle case sensitivity ---
+    const lowerRole = role.toLowerCase();
+    
+    switch (lowerRole) {
+      case 'masteradmin': // --- FIXED: Added specific case for your role ---
+      case 'superadmin':  // Kept just in case
         return (
           <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[#B045FF]/20 text-[#B045FF] border border-[#B045FF]/30 shadow-[0_0_10px_rgba(176,69,255,0.2)]">
-            <Crown className="w-3 h-3" /> Super Admin
+            <Crown className="w-3 h-3" /> Master Admin
           </span>
         );
       case 'admin': 
@@ -146,7 +143,7 @@ const UserManagement: React.FC = () => {
                     {getRoleBadge(user.role)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="relative inline-block text-left w-36"> {/* Increased width slightly for 'Super Admin' text */}
+                    <div className="relative inline-block text-left w-36"> 
                         <select
                             value={user.role}
                             onChange={(e) => handleRoleChange(user.id, e.target.value)}
@@ -160,9 +157,9 @@ const UserManagement: React.FC = () => {
                             <option value="driver">Driver</option>
                             <option value="admin">Admin</option>
                             
-                            {/* --- ADDED THIS OPTION --- */}
-                            {/* This ensures your role displays correctly in the dropdown, even if disabled */}
-                            <option value="superadmin">Super Admin</option>
+                            {/* --- FIX: Added 'masteradmin' to options --- */}
+                            {/* If the value doesn't exist in options, select defaults to the first option */}
+                            <option value="masteradmin">Master Admin</option>
                         </select>
                         
                         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">

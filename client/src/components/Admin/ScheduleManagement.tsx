@@ -119,7 +119,7 @@ const ScheduleManagement: React.FC<Props> = ({
       onUpdate();
 
       if (newStatus === 'In Progress') {
-        navigate(`/driver?rideId=${ride._id}`);
+        navigate(`/driver`);
       }
     } catch (err) {
       console.error("Failed to update status", err);
@@ -152,7 +152,7 @@ const ScheduleManagement: React.FC<Props> = ({
   return (
     <div>
       {/* --- HEADER CONTROLS --- */}
-      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#1A1640]/50 p-4 rounded-2xl border border-white/5 backdrop-blur-md">
+      <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         
         <div className="flex items-center gap-4 w-full sm:w-auto">
           <div className="flex items-center gap-2 px-4 py-2 bg-[#0D0A2A] border border-white/10 rounded-xl w-full sm:w-auto">
@@ -161,7 +161,7 @@ const ScheduleManagement: React.FC<Props> = ({
                 type="date"
                 value={selectedDate}
                 onChange={(e) => onDateChange(e.target.value)}
-                className="bg-transparent border-none text-white focus:ring-0 text-sm font-medium w-full"
+                className="bg-transparent border-none text-white focus:ring-0 text-sm font-medium w-full [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:cursor-pointer"
              />
           </div>
         </div>
@@ -174,7 +174,7 @@ const ScheduleManagement: React.FC<Props> = ({
             <Plus className="w-5 h-5" />
             <span className="hidden sm:inline">Schedule Ride</span>
             <span className="sm:hidden">Add</span>
-          </button>
+          </button> 
         )}
       </div>
 

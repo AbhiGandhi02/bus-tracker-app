@@ -57,9 +57,8 @@ const DriverDashboard: React.FC = () => {
     fetchRides();
   }, [fetchRides]);
 
-  const handleStartClick = () => {
-    // simply redirect to the dashboard with the rideId as a query param
-    navigate(`/driver`);
+  const handleStartClick = (rideId: string) => {
+    startTracking(rideId);
   };
       
   // --- TRACKING LOGIC ---
@@ -87,7 +86,7 @@ const DriverDashboard: React.FC = () => {
     const options = {
       enableHighAccuracy: true,
       timeout: 10000,
-      maximumAge: 0
+      maximumAge: 1000
     };
 
     const onSuccess = (position: GeolocationPosition) => {
@@ -332,7 +331,7 @@ const DriverDashboard: React.FC = () => {
                           {/* 3. Action Button */}
                           <div className="w-full md:w-auto">
                             <button 
-                              onClick={() => handleStartClick()}
+                              onClick={() => handleStartClick(ride._id)}
                               className="w-full md:w-32 h-12 rounded-xl bg-gradient-to-r from-[#B045FF] to-[#7c3aed] hover:from-[#c069ff] hover:to-[#8b5cf6] text-white font-bold shadow-lg shadow-[#B045FF]/20 hover:shadow-[#B045FF]/40 transform group-hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2"
                             >
                               <span>GO</span>

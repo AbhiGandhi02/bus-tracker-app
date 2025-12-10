@@ -198,7 +198,7 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
   }
 
   return (
-    <div className="w-full h-[500px] rounded-lg overflow-hidden shadow-lg border border-gray-200">
+    <div className="w-full h-full rounded-lg overflow-hidden shadow-lg border border-gray-200">
       <Map
         {...viewState}
         onMove={(evt) => setViewState(evt.viewState)}

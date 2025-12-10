@@ -6,9 +6,15 @@ import { Users, LogOut, LayoutDashboard, Bus, Map, Calendar } from 'lucide-react
 const BusBuddyLogo = '/images/BusBuddyLogo.png';
 
 const Sidebar: React.FC = () => {
-  const { logout, isMasterAdmin, isPlanner, isOperator } = useAuth();
+  const { logout, isMasterAdmin, isPlanner, isOperator, user } = useAuth();
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
+
+  // --- LOGIC: Determine Portal Name based on Role ---
+  let portalName = 'Admin Portal';
+  if (user?.role === 'masteradmin') portalName = 'Master Admin';
+  if (user?.role === 'driver') portalName = 'Driver Portal';
+  // --------------------------------------------------
 
   const handleLogout = async () => {
     await logout();
@@ -55,9 +61,11 @@ const Sidebar: React.FC = () => {
           <h1 className="text-lg font-bold tracking-tight text-white leading-none">
             Bus<span className="text-[#B045FF]">Buddy</span>
           </h1>
+          {/* --- UPDATED: Uses dynamic variable instead of hardcoded text --- */}
           <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider mt-0.5">
-            Admin Portal
+            {portalName}
           </p>
+          {/* --------------------------------------------------------------- */}
         </div>
       </div>
 
@@ -103,7 +111,7 @@ const Sidebar: React.FC = () => {
         {/* --- DRIVER LINK (Conditional) --- */}
         {isOperator() && (
           <div className="mt-8 pt-6 border-t border-white/5">
-             <div className={`px-3 mb-2 transition-all duration-300 overflow-hidden whitespace-nowrap ${isHovered ? 'opacity-100 max-h-10' : 'opacity-0 max-h-0'}`}>
+              <div className={`px-3 mb-2 transition-all duration-300 overflow-hidden whitespace-nowrap ${isHovered ? 'opacity-100 max-h-10' : 'opacity-0 max-h-0'}`}>
               <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Driver View</p>
             </div>
             
