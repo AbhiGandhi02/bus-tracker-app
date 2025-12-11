@@ -1,6 +1,6 @@
 import React from 'react';
 import { ScheduledRide, RideListProps, BusMaster, Route, RideStatus } from '../../types';
-import { Clock, ArrowRight, MapPin, Calendar, Check, AlertCircle } from 'lucide-react';
+import { Clock, ArrowRight, MapPin, Calendar, Check } from 'lucide-react';
 
 interface UpdatedRideListProps extends RideListProps {
   isToday: boolean;

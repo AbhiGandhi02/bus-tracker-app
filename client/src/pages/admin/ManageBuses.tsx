@@ -32,7 +32,7 @@ const ManageBuses: React.FC = () => {
   if (loading && buses.length === 0) {
     return (
       <AdminLayout title="Manage Buses">
-        <div className="flex justify-center items-center h-[60vh]">
+          <div className="flex justify-center items-center h-60 md:h-[60vh]">
           <Loader size="lg" />
         </div>
       </AdminLayout>

@@ -153,17 +153,19 @@ const DriverDashboard: React.FC = () => {
         portalName="Driver Portal"
       />
 
-      <main className="pt-32 px-4 pb-20 max-w-3xl mx-auto">
+      {/* CHANGE: Reduced top padding for mobile (pt-24) vs desktop (md:pt-32) */}
+      <main className="pt-6 lg:pt-8 md:pt-32 px-4 pb-20 max-w-3xl mx-auto">
         
         {/* BACK BUTTON */}
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-4 mb-4 md:mb-6">
           <button 
             onClick={() => navigate('/')} 
             className="p-2 bg-white/5 border border-white/10 rounded-full hover:bg-white/10 text-gray-200 transition-all group"
           >
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
           </button>
-          <h1 className="text-xl font-bold text-white tracking-wide">
+          {/* CHANGE: Smaller text on mobile */}
+          <h1 className="text-lg md:text-xl font-bold text-white tracking-wide">
             Dashboard Overview
           </h1>
         </div>
@@ -177,15 +179,17 @@ const DriverDashboard: React.FC = () => {
         )}
 
         {trackingRide ? (
-          /* --- ACTIVE TRACKING CARD (unchanged) --- */
-          <div className="relative overflow-hidden bg-[#1A1640] rounded-3xl border-2 border-[#B045FF]/50 shadow-[0_0_50px_-12px_rgba(176,69,255,0.3)] p-6 md:p-8">
+          /* --- ACTIVE TRACKING CARD --- */
+          /* CHANGE: Responsive padding p-5 (mobile) vs md:p-8 (desktop) */
+          <div className="relative overflow-hidden bg-[#1A1640] rounded-3xl border-2 border-[#B045FF]/50 shadow-[0_0_50px_-12px_rgba(176,69,255,0.3)] p-5 md:p-8">
              <div className="absolute top-0 right-0 w-64 h-64 bg-[#B045FF]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
             {/* Status Indicator */}
             <div className="flex justify-between items-start mb-6 relative z-10">
               <div className="flex flex-col">
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Current Status</span>
-                <h2 className="text-2xl font-bold text-white">Tracking Active</h2>
+                {/* CHANGE: Responsive text size */}
+                <h2 className="text-xl md:text-2xl font-bold text-white">Tracking Active</h2>
               </div>
               <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/20 border border-green-500/30 rounded-full">
                 <span className="relative flex h-3 w-3">
@@ -199,12 +203,13 @@ const DriverDashboard: React.FC = () => {
             {/* Bus & Route Details */}
             <div className="grid gap-6 mb-8 relative z-10">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-[#B045FF]/20 flex items-center justify-center text-[#B045FF] border border-[#B045FF]/30">
-                  <span className="text-2xl">🚌</span>
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-[#B045FF]/20 flex items-center justify-center text-[#B045FF] border border-[#B045FF]/30">
+                  <span className="text-xl md:text-2xl">🚌</span>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Bus Number</p>
-                  <p className="text-2xl font-bold text-white tracking-tight">{(trackingRide.busId as BusMaster).busNumber}</p>
+                  {/* CHANGE: Responsive text size */}
+                  <p className="text-xl md:text-2xl font-bold text-white tracking-tight">{(trackingRide.busId as BusMaster).busNumber}</p>
                 </div>
               </div>
 
@@ -213,7 +218,8 @@ const DriverDashboard: React.FC = () => {
                   <Navigation className="w-5 h-5 text-gray-400" />
                   <span className="text-sm text-gray-300 font-medium">Route Information</span>
                 </div>
-                <p className="text-lg font-semibold text-white pl-8">{(trackingRide.routeId as Route).routeName}</p>
+                {/* CHANGE: Responsive text size */}
+                <p className="text-base md:text-lg font-semibold text-white pl-8">{(trackingRide.routeId as Route).routeName}</p>
               </div>
 
               {/* Stats Grid */}
@@ -232,7 +238,8 @@ const DriverDashboard: React.FC = () => {
             {/* Action Button */}
             <button
               onClick={stopTracking}
-              className="w-full py-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-lg shadow-lg hover:shadow-red-500/25 transition-all flex items-center justify-center gap-3 relative z-10 group"
+              /* CHANGE: Adjusted padding (py-3 mobile, py-4 desktop) */
+              className="w-full py-3 md:py-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-lg shadow-lg hover:shadow-red-500/25 transition-all flex items-center justify-center gap-3 relative z-10 group"
             >
               <StopCircle className="w-6 h-6 group-hover:scale-110 transition-transform" />
               Stop Tracking
@@ -277,11 +284,12 @@ const DriverDashboard: React.FC = () => {
                       {/* Status Strip on Left */}
                       <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${ride.status === 'In Progress' ? 'bg-green-500' : 'bg-blue-500'}`} />
 
-                      <div className="p-6">
+                      {/* CHANGE: Reduced padding for mobile (p-5) */}
+                      <div className="p-5 md:p-6">
                         <div className="flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
                           
                           {/* 1. Time & Bus Info */}
-                          <div className="flex-1">
+                          <div className="flex-1 w-full md:w-auto">
                              <div className="flex items-center gap-3 mb-4">
                                 <div className="px-3 py-1 rounded bg-white/5 border border-white/10 text-xl font-bold font-mono text-white">
                                   {ride.departureTime}
@@ -307,7 +315,7 @@ const DriverDashboard: React.FC = () => {
                           </div>
 
                           {/* 2. Visual Route Timeline */}
-                          <div className="flex-1 w-full md:w-auto border-l border-white/5 pl-4 md:pl-0 md:px-6 py-2">
+                          <div className="flex-1 w-full md:w-auto border-l border-white/5 pl-4 md:pl-6 py-2">
                              <div className="relative pl-6 space-y-6">
                                 {/* Vertical Dotted Line */}
                                 <div className="absolute left-[0.7rem] top-2 bottom-2 w-0.5 border-l-2 border-dashed border-gray-700" />

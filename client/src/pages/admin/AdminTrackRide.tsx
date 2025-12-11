@@ -182,7 +182,7 @@ const AdminTrackRide: React.FC = () => {
 
   return (
     <AdminLayout title="Live Tracking">
-      <div className="flex flex-col h-[calc(100vh-100px)] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+      <div className="flex flex-col h-auto md:h-[calc(100vh-100px)] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
         
         {/* Page Title & Back Button */}
         <div className="flex items-center gap-4 mb-5">
@@ -198,10 +198,10 @@ const AdminTrackRide: React.FC = () => {
         </div>
 
         {/* Map and Details Layout */}
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden gap-6 pb-4">
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden gap-6">
           
           {/* Map Section */}
-          <div className="flex-1 lg:flex-[2] h-[50vh] lg:h-auto min-h-[300px] rounded-2xl overflow-hidden shadow-2xl border border-white/10 relative">
+          <div className="flex-1 lg:flex-[2] h-80 md:h-[50vh] lg:h-auto min-h-[200px] rounded-2xl overflow-hidden shadow-2xl border border-white/10 relative">
             {!isLiveTracking && (
               <MapOverlay status={ride.status} departureTime={ride.departureTime} />
             )}
@@ -212,7 +212,7 @@ const AdminTrackRide: React.FC = () => {
           </div>
 
           {/* Details Section (Reusing Student Component) */}
-          <div className="lg:w-[400px] h-[40vh] lg:h-auto overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+          <div className="lg:w-[400px] h-80 md:h-[40vh] lg:h-auto overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
             <RideDetails ride={ride} />
           </div>
         </div>

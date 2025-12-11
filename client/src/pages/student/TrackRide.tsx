@@ -173,7 +173,7 @@ const TrackRide: React.FC = () => {
   const isLiveTracking = ride.status === 'In Progress';
 
   return (
-    <div className="min-h-screen bg-[#0D0A2A] text-white">
+    <div className="min-h-screen bg-[#0D0A2A] text-white flex flex-col">
       
       {/* 1. Navbar */}
       <Navbar 
@@ -184,26 +184,29 @@ const TrackRide: React.FC = () => {
       />
 
       {/* 2. Main Content */}
-      <div className="pt-28 px-4 pb-6 max-w-7xl mx-auto flex flex-col h-screen">
+      {/* CHANGE: Reduced top padding for mobile (pt-6) vs desktop (lg:pt-8) */}
+      <div className="pt-6 lg:pt-8 px-4 pb-6 max-w-7xl mx-auto flex flex-col flex-1 w-full">
         
         {/* Page Title & Back Button */}
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-4 mb-4 lg:mb-6">
           <button 
             onClick={handleBack} 
             className="p-2 bg-white/5 border border-white/10 rounded-full hover:bg-white/10 text-gray-200 transition-all"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-2xl font-bold text-white tracking-wide">
+          <h1 className="text-xl lg:text-2xl font-bold text-white tracking-wide">
             Ride Details
           </h1>
         </div>
 
         {/* Map and Details Layout */}
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden gap-6 pb-4">
+        {/* CHANGE: Flex-col for mobile (stacked), flex-row for Desktop */}
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden gap-4 lg:gap-6 pb-4">
           
           {/* Map Section */}
-          <div className="flex-1 lg:flex-[2] h-[50vh] lg:h-auto min-h-[300px] rounded-2xl overflow-hidden shadow-2xl border border-white/10 relative">
+          {/* CHANGE: h-80 on mobile, flex-1 on desktop to match details height */}
+          <div className="w-full h-80 lg:h-auto lg:flex-[2] rounded-2xl overflow-hidden shadow-2xl border border-white/10 relative shrink-0 lg:shrink">
             {!isLiveTracking && (
               <MapOverlay status={ride.status} departureTime={ride.departureTime} />
             )}
@@ -214,7 +217,8 @@ const TrackRide: React.FC = () => {
           </div>
 
           {/* Details Section */}
-          <div className="lg:w-[400px] h-[40vh] lg:h-auto overflow-y-auto custom-scrollbar">
+          {/* CHANGE: Flex-1 to take remaining space on mobile, fixed width on desktop, same height as map */}
+          <div className="flex-1 lg:w-[400px] lg:flex-none h-80 lg:h-auto overflow-y-auto custom-scrollbar min-h-0">
             <RideDetails ride={ride} />
           </div>
         </div>

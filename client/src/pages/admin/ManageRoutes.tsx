@@ -32,7 +32,7 @@ const ManageRoutes: React.FC = () => {
   if (loading && routes.length === 0) {
     return (
       <AdminLayout title="Manage Routes">
-        <div className="flex justify-center items-center h-[60vh]">
+        <div className="flex justify-center items-center h-60 md:h-[60vh]">
           <Loader size="lg"/>
         </div>
       </AdminLayout>

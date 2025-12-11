@@ -150,7 +150,7 @@ const ViewSchedule: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0D0A2A] text-white flex flex-col font-sans selection:bg-[#B045FF] selection:text-white relative overflow-hidden">
+    <div className="min-h-screen mt-2 bg-[#0D0A2A] text-white flex flex-col font-sans selection:bg-[#B045FF] selection:text-white relative overflow-hidden">
 
       {/* Background Decor (Blobs) */}
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0">
@@ -166,12 +166,13 @@ const ViewSchedule: React.FC = () => {
       />
 
       {/* Main Content */}
-      <main className="relative z-10 flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="mb-8">
+      {/* CHANGE: Reduced top padding for mobile (pt-6) vs desktop (md:pt-8) */}
+      <main className="relative z-10 flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pt-6 md:pt-8">
+        <div className="mb-6 md:mb-8">
           <div className="flex items-end justify-between mb-6">
             <div>
-              <h2 className="text-3xl font-bold text-white">Your Schedule</h2>
-              <p className="text-gray-400 text-sm mt-1">Check upcoming rides and track your bus.</p>
+              <h2 className="text-2xl md:text-3xl font-bold text-white">Your Schedule</h2>
+              <p className="text-gray-400 text-xs md:text-sm mt-1">Check upcoming rides and track your bus.</p>
             </div>
           </div>
 
@@ -220,7 +221,8 @@ const ViewSchedule: React.FC = () => {
         )}
 
         {/* List Container */}
-        <div className="h-[calc(100vh-280px)]">
+        {/* CHANGE: Dynamic height calculation to ensure scrollability on mobile */}
+        <div className="h-[calc(100vh-250px)] md:h-[calc(100vh-280px)]">
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <Loader size="lg" />
