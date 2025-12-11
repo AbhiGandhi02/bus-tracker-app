@@ -35,11 +35,11 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     });
 
     newSocket.on('connect', () => {
-      console.log('✅ Socket.io Connected:', newSocket.id);
+      console.log('Socket.io Connected:', newSocket.id);
     });
 
     newSocket.on('disconnect', () => {
-      console.log('❌ Socket.io Disconnected');
+      console.log('Socket.io Disconnected');
     });
 
     newSocket.on('connect_error', (error) => {

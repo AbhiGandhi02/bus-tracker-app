@@ -36,14 +36,14 @@ async function updateBusLocation() {
     );
 
     if (response.data.success) {
-      console.log('✅ Location updated successfully');
+      console.log('Location updated successfully');
     }
 
     // Move to next point in route
     currentIndex = (currentIndex + 1) % route.length;
     
   } catch (error) {
-    console.error('❌ Error updating location:', error.message);
+    console.error('Error updating location:', error.message);
   }
 }
 

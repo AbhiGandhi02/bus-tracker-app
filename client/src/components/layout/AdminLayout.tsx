@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Sidebar from './Sidebar';
-import { ShieldCheck, Car, Crown } from 'lucide-react'; // Added Crown icon
+import { ShieldCheck, Car, Crown } from 'lucide-react'; 
 import { useAuth } from '../../context/AuthContext';
 
 interface AdminLayoutProps {
@@ -11,6 +11,9 @@ interface AdminLayoutProps {
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, actions }) => {
   const { user } = useAuth();
+  
+  // 1. Add state to track if sidebar is hovered
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
 
   // --- LOGIC: Determine Label, Color, and Icon based on Role ---
   let portalLabel = 'Admin Portal';
@@ -31,9 +34,18 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, actions }) =
   return (
     <div className="flex min-h-screen bg-[#050414]">
       
-      <Sidebar />
+      {/* 2. Pass the state and the setter to Sidebar */}
+      <Sidebar 
+        isHovered={isSidebarHovered} 
+        setIsHovered={setIsSidebarHovered} 
+      />
       
-      <div className="flex-1 flex flex-col ml-20 transition-all duration-300 w-full">
+      {/* 3. Update margin-left based on state (ml-20 vs ml-60) */}
+      <div 
+        className={`flex-1 flex flex-col transition-all duration-300 w-full ${
+          isSidebarHovered ? 'ml-60' : 'ml-20'
+        }`}
+      >
         
         {/* Top Header */}
         <header className="z-10 bg-[#0D0A2A] border-b border-white/5 sticky top-0">

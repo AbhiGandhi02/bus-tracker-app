@@ -52,20 +52,20 @@ app.set('io', io);
 
 // Socket.io connection
 io.on('connection', (socket) => {
-  console.log(`✅ Client connected: ${socket.id}`);
+  console.log(`Client connected: ${socket.id}`);
 
   socket.on('subscribe-ride', (rideId) => {
     socket.join(`ride-${rideId}`);
-    console.log(`📍 Client ${socket.id} subscribed to ride ${rideId}`);
+    console.log(`Client ${socket.id} subscribed to ride ${rideId}`);
   });
 
   socket.on('unsubscribe-ride', (rideId) => {
     socket.leave(`ride-${rideId}`);
-    console.log(`📍 Client ${socket.id} unsubscribed from ride ${rideId}`);
+    console.log(`Client ${socket.id} unsubscribed from ride ${rideId}`);
   });
 
   socket.on('disconnect', () => {
-    console.log(`❌ Client disconnected: ${socket.id}`);
+    console.log(`Client disconnected: ${socket.id}`);
   });
 });
 
@@ -94,7 +94,7 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 httpServer.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🔌 WebSocket server ready`);
-  console.log(`🔥 Firebase Admin initialized`);
+  console.log(`Server running on port ${PORT}`);
+  console.log(`WebSocket server ready`);
+  console.log(`Firebase Admin initialized`);
 });

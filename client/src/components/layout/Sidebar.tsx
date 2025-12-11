@@ -1,38 +1,39 @@
-import React, { useState } from 'react';
+import React from 'react'; // Removed useState from here
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Users, LogOut, LayoutDashboard, Bus, Map, Calendar } from 'lucide-react';
 
 const BusBuddyLogo = '/images/BusBuddyLogo.png';
 
-const Sidebar: React.FC = () => {
+// 1. Define the props we expect from the parent
+interface SidebarProps {
+  isHovered: boolean;
+  setIsHovered: (value: boolean) => void;
+}
+
+// 2. Accept props in the component
+const Sidebar: React.FC<SidebarProps> = ({ isHovered, setIsHovered }) => {
   const { logout, isMasterAdmin, isPlanner, isOperator, user } = useAuth();
   const navigate = useNavigate();
-  const [isHovered, setIsHovered] = useState(false);
+  // Internal state removed! 
 
-  // --- LOGIC: Determine Portal Name based on Role ---
   let portalName = 'Admin Portal';
   if (user?.role === 'masteradmin') portalName = 'Master Admin';
   if (user?.role === 'driver') portalName = 'Driver Portal';
-  // --------------------------------------------------
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
 
-  // Build Nav Items
   const navItems = [];
-
   if (isPlanner() || isOperator()) {
     navItems.push({ path: '/admin/schedule', label: 'Daily Schedule', icon: <Calendar className="w-5 h-5" /> });
   }
-
   if (isPlanner()) {
     navItems.push({ path: '/admin/buses', label: 'Manage Buses', icon: <Bus className="w-5 h-5" /> });
     navItems.push({ path: '/admin/routes', label: 'Manage Routes', icon: <Map className="w-5 h-5" /> });
   }
-
   if (isMasterAdmin()) {
     navItems.push({ path: '/admin/users', label: 'Manage Users', icon: <Users className="w-5 h-5" /> });
   }
@@ -42,38 +43,31 @@ const Sidebar: React.FC = () => {
       className={`fixed left-0 top-0 h-screen bg-[#0D0A2A] border-r border-white/10 text-white z-50 flex flex-col transition-all duration-300 ease-in-out shadow-2xl ${
         isHovered ? 'w-60' : 'w-20'
       }`}
+      // 3. Use the props to control state
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* --- HEADER --- */}
-      {/* 'pl-6' keeps the icon centered when collapsed (w-20) and left-aligned when expanded */}
+      {/* ... The rest of your JSX remains exactly the same ... */}
+      
+      {/* HEADER */}
       <div className="h-20 flex items-center pl-6 border-b border-white/5 relative overflow-hidden whitespace-nowrap">
-        
-        {/* Logo Icon (No wrapper box) */}
         <div className="shrink-0 flex items-center justify-center">
             <span className="text-3xl filter drop-shadow-lg" role="img" aria-label="bus">
               <img src={BusBuddyLogo} alt="BusBuddy Logo" className="w-8 h-8 object-contain" />
             </span>
         </div>
-
-        {/* Text (Fades in/out) */}
         <div className={`ml-4 transition-all duration-300 overflow-hidden ${isHovered ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'}`}>
           <h1 className="text-lg font-bold tracking-tight text-white leading-none">
             Bus<span className="text-[#B045FF]">Buddy</span>
           </h1>
-          {/* --- UPDATED: Uses dynamic variable instead of hardcoded text --- */}
           <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider mt-0.5">
             {portalName}
           </p>
-          {/* --------------------------------------------------------------- */}
         </div>
       </div>
 
-      {/* --- NAVIGATION --- */}
-      {/* Added classes to hide scrollbar but keep functionality */}
+      {/* NAVIGATION */}
       <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
-        
-        {/* Section Label */}
         <div className={`px-3 mb-2 transition-all duration-300 overflow-hidden whitespace-nowrap ${isHovered ? 'opacity-100 max-h-10' : 'opacity-0 max-h-0'}`}>
           <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Management</p>
         </div>
@@ -91,15 +85,10 @@ const Sidebar: React.FC = () => {
               }`
             }
           >
-            {/* Icon */}
             <div className="shrink-0 relative z-10">{item.icon}</div>
-            
-            {/* Label */}
             <span className={`text-sm font-medium transition-all duration-300 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
               {item.label}
             </span>
-            
-            {/* Hover Tooltip (Only shows when collapsed) */}
             {!isHovered && (
               <div className="absolute left-full ml-4 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl border border-white/10">
                 {item.label}
@@ -108,13 +97,12 @@ const Sidebar: React.FC = () => {
           </NavLink>
         ))}
 
-        {/* --- DRIVER LINK (Conditional) --- */}
+        {/* DRIVER LINK */}
         {isOperator() && (
           <div className="mt-8 pt-6 border-t border-white/5">
               <div className={`px-3 mb-2 transition-all duration-300 overflow-hidden whitespace-nowrap ${isHovered ? 'opacity-100 max-h-10' : 'opacity-0 max-h-0'}`}>
               <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Driver View</p>
             </div>
-            
             <NavLink
               to="/driver"
               className={({ isActive }) =>
@@ -129,7 +117,6 @@ const Sidebar: React.FC = () => {
               <span className={`text-sm font-medium transition-all duration-300 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
                 Driver Dashboard
               </span>
-              
               {!isHovered && (
                 <div className="absolute left-full ml-4 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl border border-white/10">
                   Driver Dashboard
@@ -140,7 +127,7 @@ const Sidebar: React.FC = () => {
         )}
       </nav>
 
-      {/* --- FOOTER / LOGOUT --- */}
+      {/* FOOTER */}
       <div className="p-3 border-t border-white/5 bg-[#0D0A2A]">
         <button
           onClick={handleLogout}
@@ -150,7 +137,6 @@ const Sidebar: React.FC = () => {
           <span className={`text-sm font-medium transition-all duration-300 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
             Sign Out
           </span>
-          
           {!isHovered && (
             <div className="absolute left-full ml-4 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl border border-white/10">
               Sign Out
