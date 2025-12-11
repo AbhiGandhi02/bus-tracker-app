@@ -2,7 +2,6 @@ import React from 'react';
 import { BusFront, MapPin, Calendar, Navigation, User, Clock } from 'lucide-react';
 import { ScheduledRide, RideDetailsProps, BusMaster, Route } from '../../types';
 
-// Styling for the status badges
 const statusPillStyles: Record<ScheduledRide['status'], string> = {
   'Scheduled': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
   'In Progress': 'bg-green-500/20 text-green-300 border-green-500/30',

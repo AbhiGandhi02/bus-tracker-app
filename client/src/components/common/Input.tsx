@@ -7,7 +7,6 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, className = '', id, ...props }, ref) => {
-    // Generate a random ID if none is provided for accessibility
     const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
 
     return (

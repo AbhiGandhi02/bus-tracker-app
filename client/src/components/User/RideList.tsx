@@ -7,7 +7,6 @@ interface UpdatedRideListProps extends RideListProps {
   selectedDate: Date;
 }
 
-// Updated Status Pills for Dark Mode (Neon/Glassy look)
 const statusPillStyles: Record<RideStatus, string> = {
   'Scheduled': 'bg-blue-500/10 text-blue-300 border border-blue-500/20',
   'In Progress': 'bg-yellow-500/10 text-yellow-300 border border-yellow-500/20 animate-pulse',
@@ -15,7 +14,6 @@ const statusPillStyles: Record<RideStatus, string> = {
   'Cancelled': 'bg-red-500/10 text-red-300 border border-red-500/20',
 };
 
-// --- Helper component for the link text ---
 const RideLinkText: React.FC<{ ride: ScheduledRide; isToday: boolean }> = ({ ride, isToday }) => {
   const isTracking = ride.status === 'In Progress' && isToday;
   
@@ -53,11 +51,9 @@ const RideLinkText: React.FC<{ ride: ScheduledRide; isToday: boolean }> = ({ rid
     </div>
   );
 };
-// --- END HELPER ---
 
 const RideList: React.FC<UpdatedRideListProps> = ({ rides, onSelectRide, isToday, selectedDate }) => {
   
-  // Empty State - Dark Theme
   if (rides.length === 0) {
     const dateString = selectedDate.toLocaleDateString('en-US', {
       month: 'long', day: 'numeric'

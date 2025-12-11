@@ -26,7 +26,6 @@ const Button: React.FC<ButtonProps> = ({
   };
 
   const widthClass = fullWidth ? 'w-full' : '';
-  // Disable button if explicitly disabled OR if loading
   const isDisabled = disabled || isLoading;
   const disabledClass = isDisabled ? 'opacity-50 cursor-not-allowed' : '';
 

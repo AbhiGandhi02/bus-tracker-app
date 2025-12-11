@@ -29,15 +29,13 @@ exports.verifyFirebaseToken = async (req, res, next) => {
         email: decodedToken.email,
         name: decodedToken.name || decodedToken.email.split('@')[0],
         photoURL: decodedToken.picture,
-        role: 'user' // Default role
+        role: 'user'
       });
     } else {
-      // Update last login
       user.lastLogin = Date.now();
       await user.save();
     }
 
-    // Attach user to request
     req.user = user;
     next();
 

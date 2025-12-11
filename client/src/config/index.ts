@@ -6,8 +6,8 @@ export const config = {
   SOCKET_URL: process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000',
   // Map default settings
   MAP_DEFAULTS: {
-    longitude: -74.0060, // Default: New York
-    latitude: 40.7128,   // Default: New York
+    longitude: 12.8496, 
+    latitude: 77.6649,   
     zoom: 11,
   }
 } as const;

@@ -5,10 +5,10 @@ import {
   RideLocation, ApiResponse, User 
 } from '../types';
 import { auth } from '../config/firebase';
-import config from '../config'; // Import config for API_URL
+import config from '../config'; 
 
 const api: AxiosInstance = axios.create({
-  baseURL: `${config.API_URL}/api`, // Use API_URL from config
+  baseURL: `${config.API_URL}/api`, 
   headers: {
     'Content-Type': 'application/json'
   }
@@ -62,7 +62,7 @@ export const busMasterAPI = {
   delete: (id: string) => api.delete<ApiResponse<null>>(`/bus-master/${id}`)
 };
 
-// Route API (Simplified)
+// Route API 
 export const routeAPI = {
   getAll: () => api.get<ApiResponse<Route[]>>('/routes'),
   create: (data: RouteInput) => api.post<ApiResponse<Route>>('/routes', data),

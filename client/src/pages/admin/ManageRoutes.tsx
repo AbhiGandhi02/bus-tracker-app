@@ -48,7 +48,6 @@ const ManageRoutes: React.FC = () => {
         </div>
       )}
       
-      {/* Introduction / Helper Text */}
       <div className="mb-6">
         <p className="text-gray-400 max-w-3xl leading-relaxed">
           Create and manage bus routes here. 

@@ -2,25 +2,6 @@ const Route = require('../models/Route');
 const { Client } = require('@googlemaps/google-maps-services-js');
 const googleMapsClient = new Client({});
 
-// Geocodes a text address string into {lat, lng} coordinates.
-// const geocodeAddress = async (address) => {
-//   try {
-//     const response = await googleMapsClient.geocode({
-//       params: {
-//         address: address,
-//         key: process.env.GOOGLE_MAPS_API_KEY,
-//       },
-//     });
-//     if (response.data.results.length > 0) {
-//       return response.data.results[0].geometry.location; // Returns { lat, lng }
-//     }
-//     return null;
-//   } catch (error) {
-//     console.error('Google Geocoding API Error:', error.message);
-//     return null;
-//   }
-// };
-
 // Fetches an encoded polyline from Google Maps Directions API.
 const getPolylineForRoute = async (originCoords, destinationCoords) => {
   try {
@@ -76,17 +57,13 @@ exports.getAllRoutes = async (req, res) => {
 // @access  Private/Admin
 exports.createRoute = async (req, res) => {
   try {
-    // The frontend is now sending 'departureCoords' and 'arrivalCoords'
     const { departureCoords, arrivalCoords } = req.body;
 
-    // 1. Fetch the polyline using the coordinates from the client
     const polyline = await getPolylineForRoute(departureCoords, arrivalCoords);
     
-    // 2. Add the polyline to the request body
     const routeData = {
       ...req.body,
       polyline: polyline,
-      // 'departureCoords' and 'arrivalCoords' are already in req.body
     };
 
     const route = await Route.create(routeData);
@@ -112,18 +89,15 @@ exports.updateRoute = async (req, res) => {
     const { departureCoords, arrivalCoords } = req.body;
     let updatedData = { ...req.body };
 
-    // If locations are changing, the frontend has sent new coords
     if (departureCoords || arrivalCoords) {
-      // 1. Fetch new polyline using the new coordinates
       const newPolyline = await getPolylineForRoute(departureCoords, arrivalCoords);
       
-      // 2. Add new polyline to be updated
       updatedData.polyline = newPolyline;
     }
 
     const route = await Route.findByIdAndUpdate(
       req.params.id,
-      updatedData, // Use new updatedData
+      updatedData, 
       { new: true, runValidators: true }
     );
 

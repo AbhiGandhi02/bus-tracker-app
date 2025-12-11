@@ -28,7 +28,7 @@ const Navbar: React.FC<NavbarProps> = ({
       <nav className="w-full max-w-xl md:max-w-5xl lg:max-w-7xl bg-[#0D0A2A]/80 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl px-4 py-2.5 md:px-6 md:py-3 transition-all">
         <div className="flex items-center justify-between w-full">
 
-          {/* Left: Brand (Mobile & Desktop) */}
+          {/* Left: Brand */}
           <div className="flex items-center gap-2 md:gap-3">
             {BusBuddy ? (
               <img src={BusBuddy} alt="Logo" className="w-6 h-6 md:w-8 md:h-8 object-contain" />
@@ -39,14 +39,12 @@ const Navbar: React.FC<NavbarProps> = ({
               <h1 className="text-base md:text-lg font-bold tracking-tight text-white leading-none">
                 Bus<span className="text-[#B045FF]">Buddy</span>
               </h1>
-              {/* Portal name only on mobile, under the logo */}
               <span className="text-[9px] md:hidden text-gray-400 uppercase tracking-wider font-medium">
                 {portalName}
               </span>
             </div>
           </div>
 
-          {/* Center: Portal Name (Desktop Only) */}
           <div className="hidden md:flex items-center">
             <span className="text-sm text-gray-300 uppercase tracking-wider font-medium">
               {portalName}

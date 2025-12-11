@@ -52,12 +52,10 @@ const UserManagement: React.FC = () => {
   };
 
   const getRoleBadge = (role: string) => {
-    // --- FIX: Normalized string check to handle case sensitivity ---
     const lowerRole = role.toLowerCase();
     
     switch (lowerRole) {
-      case 'masteradmin': // --- FIXED: Added specific case for your role ---
-      case 'superadmin':  // Kept just in case
+      case 'masteradmin': 
         return (
           <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[#B045FF]/20 text-[#B045FF] border border-[#B045FF]/30 shadow-[0_0_10px_rgba(176,69,255,0.2)]">
             <Crown className="w-3 h-3" /> Master Admin

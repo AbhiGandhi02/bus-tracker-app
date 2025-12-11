@@ -10,7 +10,6 @@ import { useSocket } from '../../context/SocketContext';
 import Navbar from '../../components/layout/Navbar'; 
 import { useAuth } from '../../context/AuthContext'; 
 
-// --- Helper Functions ---
 const isSameDay = (date1: Date, date2: Date): boolean => {
   return date1.getFullYear() === date2.getFullYear() &&
          date1.getMonth() === date2.getMonth() &&
@@ -184,7 +183,6 @@ const TrackRide: React.FC = () => {
       />
 
       {/* 2. Main Content */}
-      {/* CHANGE: Reduced top padding for mobile (pt-6) vs desktop (lg:pt-8) */}
       <div className="pt-6 lg:pt-8 px-4 pb-6 max-w-7xl mx-auto flex flex-col flex-1 w-full">
         
         {/* Page Title & Back Button */}
@@ -201,11 +199,9 @@ const TrackRide: React.FC = () => {
         </div>
 
         {/* Map and Details Layout */}
-        {/* CHANGE: Flex-col for mobile (stacked), flex-row for Desktop */}
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden gap-4 lg:gap-6 pb-4">
           
           {/* Map Section */}
-          {/* CHANGE: h-80 on mobile, flex-1 on desktop to match details height */}
           <div className="w-full h-80 lg:h-auto lg:flex-[2] rounded-2xl overflow-hidden shadow-2xl border border-white/10 relative shrink-0 lg:shrink">
             {!isLiveTracking && (
               <MapOverlay status={ride.status} departureTime={ride.departureTime} />
@@ -217,7 +213,6 @@ const TrackRide: React.FC = () => {
           </div>
 
           {/* Details Section */}
-          {/* CHANGE: Flex-1 to take remaining space on mobile, fixed width on desktop, same height as map */}
           <div className="flex-1 lg:w-[400px] lg:flex-none h-80 lg:h-auto overflow-y-auto custom-scrollbar min-h-0">
             <RideDetails ride={ride} />
           </div>

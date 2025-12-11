@@ -3,7 +3,7 @@ import { Route, RouteInput } from '../../types';
 import { routeAPI } from '../../services/api';
 import { Autocomplete } from '@react-google-maps/api';
 import { Plus, Edit2, Trash2, MapPin, Clock, Navigation, X } from 'lucide-react';
-import Loader from '../common/Loader'; // Ensure this handles dark mode or pass color
+import Loader from '../common/Loader'; 
 
 interface Props {
   routes: Route[];

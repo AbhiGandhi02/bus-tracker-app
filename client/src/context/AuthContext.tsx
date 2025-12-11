@@ -8,7 +8,7 @@ import {
 import { auth, googleProvider } from '../config/firebase';
 import { User, AuthContextType } from '../types';
 import axios from 'axios';
-import config from '../config'; // Import config
+import config from '../config'; 
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -84,7 +84,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // --- NEW ROLE LOGIC ---
   const isMasterAdmin = () => {
     return user?.role === 'masteradmin';
   };
@@ -98,7 +97,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Operators are 'masteradmin' OR 'driver'
     return user?.role === 'masteradmin' || user?.role === 'driver';
   };
-  // --- END NEW ROLE LOGIC ---
 
   const value: AuthContextType = {
     user,

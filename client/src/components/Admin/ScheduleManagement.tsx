@@ -48,8 +48,6 @@ const ScheduleManagement: React.FC<Props> = ({
   const navigate = useNavigate();
   const { isPlanner, isOperator } = useAuth();
 
-  // --- HANDLERS ---
-
   const handleOpenModal = (e: React.MouseEvent, ride?: ScheduledRide) => {
     e.stopPropagation(); 
     if (ride) {
@@ -217,7 +215,7 @@ const ScheduleManagement: React.FC<Props> = ({
                             <span className="px-1.5 py-0.5 rounded bg-white/10 text-xs text-gray-300 border border-white/10">{route?.routeNumber}</span>
                             {route?.routeName}
                          </span>
-                         {/* Full locations - hidden on mobile, visible on md+ */}
+                         {/* Full locations */}
                          <div className="hidden md:flex items-center gap-1 text-xs text-gray-400 mt-1">
                             <MapPin className="w-3 h-3" />
                             {route?.departureLocation} <span className="text-gray-600">→</span> {route?.arrivalLocation}
@@ -271,7 +269,7 @@ const ScheduleManagement: React.FC<Props> = ({
                           </button>
                         )}
 
-                        {/* Planner Actions (Edit/Delete) */}
+                        {/* Planner Actions */}
                         {isPlanner() && (
                           <>
                             <button 

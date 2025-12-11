@@ -1,8 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-// --- MODIFICATION: Import new role functions ---
 import { useAuth } from './context/AuthContext';
-// --- END MODIFICATION ---
 import ProtectedRoute from './components/ProtectedRoute';
 import Loader from './components/common/Loader';
 import AdminTrackRide from './pages/admin/AdminTrackRide';
@@ -25,9 +23,7 @@ import DriverDashboard from './pages/driver/DriverDashboard';
 
 
 const App: React.FC = () => {
-  // --- MODIFICATION: Get new functions ---
   const { user, loading, isPlanner, isOperator } = useAuth();
-  // --- END MODIFICATION ---
 
   if (loading) {
     return <div className="h-screen flex items-center justify-center"><Loader size="lg" /></div>;

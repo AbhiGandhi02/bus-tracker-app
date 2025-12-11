@@ -1,8 +1,4 @@
-// src/types/index.ts
-
-// ==========================================
 // User Types (Firebase)
-// ==========================================
 export interface User {
   id: string;
   firebaseUid: string;
@@ -25,9 +21,7 @@ export interface AuthContextType {
   isOperator: () => boolean; // For 'masteradmin', 'admin', OR 'driver'
 }
 
-// ==========================================
-// Bus Master Types (Static Bus Records)
-// ==========================================
+// Bus Master Types 
 export interface BusMaster {
   _id: string;
   busNumber: string;
@@ -43,16 +37,14 @@ export interface BusMasterInput {
   driverName?: string;
 }
 
-// ==========================================
-// Route Types (Simplified - No Stops)
-// ==========================================
+// Route Types 
 export interface Route {
   _id: string;
   routeNumber: string;
   routeName: string;
   departureLocation: string;
   arrivalLocation: string;
-  rideTime: string; // e.g., "45 minutes"
+  rideTime: string; 
   polyline?: string;
   isActive: boolean;
   createdAt: Date;
@@ -69,14 +61,9 @@ export interface RouteInput {
   rideTime: string;
 }
 
-// ==========================================
-// Scheduled Ride Types (Daily Scheduling)
-// ==========================================
+// Scheduled Ride Types
 
-// --- NEW TYPE ---
-// This is the type that was missing
 export type RideStatus = 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled';
-// --- END NEW TYPE ---
 
 export interface RideLocation {
   lat: number;
@@ -104,9 +91,7 @@ export interface ScheduledRideInput {
   status?: RideStatus;
 }
 
-// ==========================================
 // API Response Types
-// ==========================================
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
@@ -115,9 +100,7 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
-// ==========================================
 // Component Props Types
-// ==========================================
 export interface BusMasterManagementProps {
   buses: BusMaster[];
   onUpdate: () => void;
@@ -149,9 +132,7 @@ export interface RideMapProps {
   selectedRide?: string | null;
 }
 
-// ==========================================
 // Socket Event Types
-// ==========================================
 export interface RideLocationUpdate {
   rideId: string;
   busNumber: string;

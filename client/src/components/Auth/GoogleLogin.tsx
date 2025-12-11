@@ -11,7 +11,6 @@ const GoogleLogin: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // @ts-ignore - location.state might be unknown
   const from = location.state?.from?.pathname || '/';
 
   useEffect(() => {
@@ -58,12 +57,9 @@ const GoogleLogin: React.FC = () => {
       </div>
 
       {/* 2. RIGHT SIDE: Login Section */}
-      {/* CHANGED TO lg:w-[30%] */}
       <div className="w-full lg:w-[35%] flex flex-col items-center justify-center p-6 relative">
-        {/* Mobile Background Blob (Visible only on small screens) */}
         <div className="absolute lg:hidden top-0 right-0 w-64 h-64 bg-[#B045FF] blur-[100px] opacity-20"></div>
 
-        {/* Branding for Mobile (Visible only on small screens) */}
         <div className="absolute top-8 left-8 lg:hidden flex items-center gap-2">
             <img src={BusBuddyLogo} alt="BusBuddy Logo" className="w-8 h-8" />
             <h1 className="text-2xl font-bold">
@@ -130,8 +126,6 @@ const GoogleLogin: React.FC = () => {
               </Button>
             </div>
           </div>
-          {/* END OF GOOGLE BUTTON SECTION */}
-
         </div>
       </div>
     </div>

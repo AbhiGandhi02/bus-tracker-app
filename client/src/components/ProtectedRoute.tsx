@@ -5,12 +5,10 @@ import Loader from './common/Loader';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  // --- MODIFICATION: Update to new, specific roles ---
   requiredRole: 'masteradmin' | 'planner' | 'operator' | 'user' | 'manager';
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
-  // --- MODIFICATION: Get new role functions ---
   const { user, loading, isMasterAdmin, isPlanner, isOperator } = useAuth();
   const location = useLocation();
 
@@ -23,11 +21,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   }
 
   if (!user) {
-    // Not logged in
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // --- NEW ROLE LOGIC ---
 
   // Check for 'masteradmin' (Users page)
   if (requiredRole === 'masteradmin' && !isMasterAdmin()) {
@@ -57,9 +53,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
       return <Navigate to="/admin/schedule" replace />;
     }
   }
-  // --- END NEW ROLE LOGIC ---
 
-  // If all checks pass, render the child component
   return <>{children}</>;
 };
 

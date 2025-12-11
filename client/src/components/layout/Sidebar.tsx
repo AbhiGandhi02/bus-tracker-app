@@ -10,7 +10,6 @@ interface SidebarProps {
   setIsHovered: (value: boolean) => void;
 }
 
-// Define the shape of a navigation item
 interface NavItem {
   path: string;
   label: string;
@@ -151,12 +150,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isHovered, setIsHovered }) => {
 
   return (
     <>
-      {/* MOBILE VIEW */}
-      
-      {/* CHANGE: Updated classes for alignment and size */}
-      {/* top-5: Pushes it down to align with text */}
-      {/* left-4: Keeps it on the edge */}
-      {/* p-1.5: Makes the box smaller */}
       <button 
         onClick={() => setIsMobileOpen(true)}
         className="md:hidden fixed top-4 left-4 z-50 p-1.5 bg-[#0D0A2A] text-white rounded-lg border border-white/10 shadow-lg active:scale-95 transition-transform"

@@ -133,7 +133,7 @@ const RideMap: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRideId }
         onMove={(evt) => setViewState(evt.viewState)}
         mapboxAccessToken={config.MAPBOX_TOKEN}
         style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}
-        mapStyle="mapbox://styles/mapbox/dark-v11" /* Using Dark Mode Map Style */
+        mapStyle="mapbox://styles/mapbox/dark-v11" 
       >
         {routeGeoJson && (
           <Source id="route-line" type="geojson" data={routeGeoJson}>
@@ -167,7 +167,6 @@ const RideMap: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRideId }
             className="rounded-xl overflow-hidden"
             maxWidth="250px"
           >
-            {/* Custom Dark Popup Content */}
             <div className="p-1 min-w-[180px] bg-[#0D0A2A] text-white">
               <h3 className="text-base font-bold text-[#B045FF] mb-1">
                 {getBusNumber(selectedRide)}

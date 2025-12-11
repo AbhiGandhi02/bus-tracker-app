@@ -10,7 +10,6 @@ import { useSocket } from '../../context/SocketContext';
 import { useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'; // Icons
 
-// --- DATE HELPER FIXES (Preserved) ---
 const getToday = (): Date => {
   const today = new Date();
   today.setHours(0, 0, 0, 0); 
@@ -48,7 +47,6 @@ const parseDateFromQuery = (dateQuery: string | null): Date => {
   }
   return getToday(); 
 };
-// --- END DATE HELPERS ---
 
 const ScheduleRides: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -171,7 +169,7 @@ const ScheduleRides: React.FC = () => {
         </div>
       )}
       
-      {/* Date Navigation Bar (Styled for Dark Mode) */}
+      {/* Date Navigation Bar */}
       <div className="mb-8 flex items-center justify-between bg-[#1A1640]/50 p-2 rounded-2xl shadow-lg border border-white/5 backdrop-blur-md max-w-2xl mx-auto">
         <button 
            onClick={() => changeDay(-1)} 

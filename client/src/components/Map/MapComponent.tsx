@@ -9,7 +9,6 @@ import { BusFront, Loader2 } from 'lucide-react';
 import config from '../../config';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-// Helper to determine ride color based on status
 const getRideColor = (status: ScheduledRide['status']) => {
   switch (status) {
     case 'Scheduled':
@@ -25,7 +24,7 @@ const getRideColor = (status: ScheduledRide['status']) => {
   }
 };
 
-// Helper: Decode polyline and create GeoJSON
+// Decode polyline and create GeoJSON
 const createGeoJSONFeature = (route: Route | undefined): Feature<Geometry> | null => {
   if (!route || !route.polyline) {
     return null;
@@ -67,7 +66,6 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
     setRidesWithLocation(rides);
   }, [rides]);
 
-  // Set initial map center
   useEffect(() => {
     if (rides.length > 0) {
       const firstRideWithLocation = rides.find(
@@ -83,7 +81,6 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
     }
   }, [rides]);
 
-  // Update selectedRide when selectedRideId changes
   useEffect(() => {
     if (selectedRideId) {
       const ride = ridesWithLocation.find(r => r._id === selectedRideId);
@@ -103,7 +100,6 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
     }
   }, [selectedRideId, ridesWithLocation]);
 
-  // Socket listener
   useEffect(() => {
     if (!socket) return;
     const handleLocationUpdate = (update: RideLocationUpdate) => {
@@ -126,7 +122,6 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
     };
   }, [socket]);
 
-  // Helper functions to extract data
   const getBusNumber = (ride: ScheduledRide) => {
     return typeof ride.busId === 'object' ? ride.busId.busNumber : 'Unknown';
   };
@@ -137,9 +132,6 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
     return typeof ride.routeId === 'object' ? ride.routeId.routeName : 'Unknown';
   };
 
-  // --- THIS IS THE FIX ---
-  // The full code for 'markers' is here.
-  // You must not have the '{ride}' object directly inside the <Marker>
   const markers = useMemo(() => 
     ridesWithLocation
       .filter(ride => ride.currentLocation && ride.currentLocation.lat && ride.currentLocation.lng)
@@ -163,14 +155,9 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
           >
             <BusFront className="w-5 h-5 text-white" />
           </div>
-          {/* THE ERROR IS HERE: 
-            You probably have a stray '{ride}' variable here for debugging.
-            Make sure this is deleted.
-          */}
         </Marker>
       )), [ridesWithLocation]
   );
-  // --- END OF FIX ---
 
   if (isLoading) {
     return (

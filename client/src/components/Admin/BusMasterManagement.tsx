@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BusMaster, BusMasterInput } from '../../types';
 import { busMasterAPI } from '../../services/api';
-import { Plus, Edit2, Trash2, Bus, User, X } from 'lucide-react'; // Added Icons
+import { Plus, Edit2, Trash2, Bus, User, X } from 'lucide-react'; 
 import Loader from '../common/Loader';
 
 interface Props {
@@ -109,7 +109,6 @@ const BusMasterManagement: React.FC<Props> = ({ buses, onUpdate }) => {
                      </div>
                   </td>
                   
-                  {/* Type (Hardcoded as AC for now based on your code) */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-500/10 text-green-400 border border-green-500/20">
                       Standard AC

@@ -11,7 +11,6 @@ import Navbar from '../../components/layout/Navbar';
 
 const BusBuddyLogo = '/images/BusBuddyLogo.png';
 
-// --- Helper Functions (No changes here) ---
 const getToday = (): Date => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -47,7 +46,6 @@ const parseDateFromQuery = (dateQuery: string | null): Date => {
   }
   return getToday();
 };
-// --- END HELPER FUNCTIONS ---
 
 const ViewSchedule: React.FC = () => {
   const { user, logout } = useAuth();
@@ -150,9 +148,9 @@ const ViewSchedule: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen mt-2 bg-[#0D0A2A] text-white flex flex-col font-sans selection:bg-[#B045FF] selection:text-white relative overflow-hidden">
+    <div className="min-h-screen mt-2 bg-[#0D0A2A] text-white flex flex-col font-sans selection:bg-[#B045FF] selection:text-white relative overflow-y-auto">
 
-      {/* Background Decor (Blobs) */}
+      {/* Background Decor */}
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0">
         <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-[#4A1F8A] blur-[120px] opacity-20 animate-pulse"></div>
         <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[#B045FF] blur-[120px] opacity-10"></div>
@@ -166,8 +164,7 @@ const ViewSchedule: React.FC = () => {
       />
 
       {/* Main Content */}
-      {/* CHANGE: Reduced top padding for mobile (pt-6) vs desktop (md:pt-8) */}
-      <main className="relative z-10 flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pt-6 md:pt-8">
+      <main className="relative z-10 flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-0 pt-6 md:pt-8">
         <div className="mb-6 md:mb-8">
           <div className="flex items-end justify-between mb-6">
             <div>
@@ -221,8 +218,7 @@ const ViewSchedule: React.FC = () => {
         )}
 
         {/* List Container */}
-        {/* CHANGE: Dynamic height calculation to ensure scrollability on mobile */}
-        <div className="h-[calc(100vh-250px)] md:h-[calc(100vh-280px)]">
+        <div>
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <Loader size="lg" />

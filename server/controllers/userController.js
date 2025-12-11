@@ -50,7 +50,6 @@ exports.updateUserRole = async (req, res) => {
       });
     }
 
-    // --- Business Logic ---
     // Prevent an admin from demoting the *last* admin
     if (req.user.role === 'admin' && role !== 'admin') {
       const adminCount = await User.countDocuments({ role: 'admin' });
@@ -71,7 +70,6 @@ exports.updateUserRole = async (req, res) => {
         message: 'You cannot change your own role'
       });
     }
-    // --- End Logic ---
 
     const user = await User.findByIdAndUpdate(
       userIdToUpdate,

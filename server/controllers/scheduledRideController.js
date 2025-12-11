@@ -130,7 +130,6 @@ exports.updateRideLocation = async (req, res) => {
       timestamp: Date.now()
     };
 
-    // --- NEW GEOFENCING LOGIC ---
     // Define our trigger distance (e.g., 50 meters)
     const GEOFENCE_RADIUS = 50; 
     let statusHasChanged = false;
@@ -163,7 +162,6 @@ exports.updateRideLocation = async (req, res) => {
         }
       }
     }
-    // --- END GEOFENCING LOGIC ---
 
     await ride.save();
 

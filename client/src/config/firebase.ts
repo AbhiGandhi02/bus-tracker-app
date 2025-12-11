@@ -1,8 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 
-// Your web app's Firebase configuration
-// Get these from Firebase Console > Project Settings
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
   authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
@@ -21,7 +19,7 @@ export const auth = getAuth(app);
 // Google Auth Provider
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
-  prompt: 'select_account' // Always show account selector
+  prompt: 'select_account' 
 });
 
 export default app;

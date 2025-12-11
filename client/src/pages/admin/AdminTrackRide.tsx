@@ -9,7 +9,6 @@ import Loader from '../../components/common/Loader';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { ArrowLeft, Map, Calendar, CheckCircle, XCircle } from 'lucide-react';
 
-// --- HELPER FUNCTIONS (Same as Student View) ---
 const isSameDay = (date1: Date, date2: Date): boolean => {
   return date1.getFullYear() === date2.getFullYear() &&
          date1.getMonth() === date2.getMonth() &&
@@ -211,7 +210,7 @@ const AdminTrackRide: React.FC = () => {
             />
           </div>
 
-          {/* Details Section (Reusing Student Component) */}
+          {/* Details Section */}
           <div className="lg:w-[400px] h-80 md:h-[40vh] lg:h-auto overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
             <RideDetails ride={ride} />
           </div>
