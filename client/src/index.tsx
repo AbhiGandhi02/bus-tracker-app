@@ -7,6 +7,7 @@ import { SocketProvider } from './context/SocketContext';
 import { LoadScript } from '@react-google-maps/api';
 import config from './config';
 import './index.css';
+import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 
 // We must specify "places" to enable the Autocomplete feature
 const libraries = ['places'];
@@ -27,3 +28,5 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     </LoadScript>
   </React.StrictMode>
 );
+
+serviceWorkerRegistration.register();

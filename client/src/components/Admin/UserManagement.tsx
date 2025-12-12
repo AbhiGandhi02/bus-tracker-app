@@ -156,7 +156,6 @@ const UserManagement: React.FC = () => {
                             <option value="admin">Admin</option>
                             
                             {/* --- FIX: Added 'masteradmin' to options --- */}
-                            {/* If the value doesn't exist in options, select defaults to the first option */}
                             <option value="masteradmin">Master Admin</option>
                         </select>
                         
