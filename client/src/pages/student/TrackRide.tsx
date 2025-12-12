@@ -193,9 +193,10 @@ const TrackRide: React.FC = () => {
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-xl lg:text-2xl font-bold text-white tracking-wide">
-            Ride Details
-          </h1>
+          <div>
+            <h1 className="text-xl lg:text-2xl font-bold text-white tracking-wide">Ride Details</h1>
+            <p className="text-xs text-gray-400 mt-0.5">Tracking {typeof ride.busId === 'object' ? ride.busId.busNumber : 'Bus'}</p>
+          </div>
         </div>
 
         {/* Map and Details Layout */}
