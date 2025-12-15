@@ -5,7 +5,7 @@ import polyline from '@mapbox/polyline';
 import type { Feature, Geometry } from 'geojson';
 import { ScheduledRide, RideMapProps, RideLocationUpdate, Route } from '../../types';
 import { useSocket } from '../../context/SocketContext';
-import { BusFront, Loader2 } from 'lucide-react';
+import { BusFront, Loader2, X } from 'lucide-react';
 import config from '../../config';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -223,8 +223,16 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
               latitude={selectedRide.currentLocation.lat}
               onClose={() => setSelectedRide(null)}
               closeOnClick={false}
+              closeButton={false}
             >
-              <div className="p-2">
+              <div className="p-2 relative">
+                <button
+                  onClick={() => setSelectedRide(null)}
+                  className="absolute top-1 right-1 p-1 rounded-full hover:bg-gray-200 transition-colors"
+                  aria-label="Close popup"
+                >
+                  <X className="w-4 h-4 text-gray-600" />
+                </button>
                 <h3 className="text-base font-bold text-indigo-700 mb-1">{getBusNumber(selectedRide)}</h3>
                 <p className="text-sm mb-1">
                   <span className="font-medium">Status:</span>{' '}
