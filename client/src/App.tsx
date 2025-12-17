@@ -1,9 +1,8 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Loader from './components/common/Loader';
-import AdminTrackRide from './pages/admin/AdminTrackRide';
 
 // Auth Pages
 import Login from './pages/auth/Login';
@@ -16,10 +15,14 @@ import ManageUsers from './pages/admin/ManageUsers';
 
 // Student Pages
 import ViewSchedule from './pages/student/ViewSchedule';
-import TrackRide from './pages/student/TrackRide';
 
 // Driver Page
 import DriverDashboard from './pages/driver/DriverDashboard';
+
+// Lazy-loaded components (for code splitting - reduces initial bundle size)
+// These components import mapbox-gl which is a large library (~500KB)
+const TrackRide = lazy(() => import('./pages/student/TrackRide'));
+const AdminTrackRide = lazy(() => import('./pages/admin/AdminTrackRide'));
 
 
 const App: React.FC = () => {
@@ -32,17 +35,17 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Routes>
-        
+
         <Route
           path="/login"
           element={!user ? <Login /> : <Navigate to="/" replace />}
         />
-        
+
         <Route
           path="/admin"
           element={
             // --- MODIFICATION: Use 'manager' role ---
-            <ProtectedRoute requiredRole="manager"> 
+            <ProtectedRoute requiredRole="manager">
               <Navigate to="/admin/schedule" replace />
             </ProtectedRoute>
           }
@@ -79,11 +82,13 @@ const App: React.FC = () => {
           element={
             // --- MODIFICATION: Use 'manager' role ---
             <ProtectedRoute requiredRole="manager">
-              <AdminTrackRide />
+              <Suspense fallback={<div className="h-screen flex items-center justify-center bg-[#0D0A2A]"><Loader size="lg" /></div>}>
+                <AdminTrackRide />
+              </Suspense>
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/admin/users"
           element={
@@ -123,7 +128,9 @@ const App: React.FC = () => {
           element={
             // --- MODIFICATION: Use 'user' role ---
             <ProtectedRoute requiredRole="user">
-              <TrackRide />
+              <Suspense fallback={<div className="h-screen flex items-center justify-center bg-[#0D0A2A]"><Loader size="lg" /></div>}>
+                <TrackRide />
+              </Suspense>
             </ProtectedRoute>
           }
         />

@@ -1,14 +1,14 @@
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { 
-  signInWithPopup, 
-  signOut, 
+import React, { createContext, useState, useContext, useEffect, useMemo, useCallback, ReactNode } from 'react';
+import {
+  signInWithPopup,
+  signOut,
   onAuthStateChanged,
-  User as FirebaseUser 
+  User as FirebaseUser
 } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
 import { User, AuthContextType } from '../types';
 import axios from 'axios';
-import config from '../config'; 
+import config from '../config';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -40,7 +40,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (firebaseUser) {
         try {
           const idToken = await firebaseUser.getIdToken();
-          
+
           const response = await axios.get<AuthApiResponse>(`${config.API_URL}/api/auth/me`, {
             headers: {
               Authorization: `Bearer ${idToken}`
@@ -63,7 +63,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = useCallback(async () => {
     try {
       setError(null);
       await signInWithPopup(auth, googleProvider);
@@ -73,32 +73,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setError(message);
       return { success: false, error: message };
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await signOut(auth);
       setUser(null);
     } catch (err) {
       console.error('Error signing out:', err);
     }
-  };
+  }, []);
 
-  const isMasterAdmin = () => {
+  const isMasterAdmin = useCallback(() => {
     return user?.role === 'masteradmin';
-  };
+  }, [user]);
 
-  const isPlanner = () => {
+  const isPlanner = useCallback(() => {
     // Planners are 'masteradmin' OR 'admin'
     return user?.role === 'masteradmin' || user?.role === 'admin';
-  };
+  }, [user]);
 
-  const isOperator = () => {
+  const isOperator = useCallback(() => {
     // Operators are 'masteradmin' OR 'driver'
     return user?.role === 'masteradmin' || user?.role === 'driver';
-  };
+  }, [user]);
 
-  const value: AuthContextType = {
+  // Memoize the context value to prevent unnecessary re-renders
+  const value: AuthContextType = useMemo(() => ({
     user,
     loading,
     error,
@@ -107,7 +108,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isMasterAdmin,
     isPlanner,
     isOperator
-  };
+  }), [user, loading, error, signInWithGoogle, logout, isMasterAdmin, isPlanner, isOperator]);
 
   return (
     <AuthContext.Provider value={value}>

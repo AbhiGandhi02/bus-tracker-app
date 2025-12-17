@@ -7,8 +7,6 @@ html, body, #root {
   min-height: 100vh;
 }
 
-/* Mapbox CSS - Required for maps */
-@import 'mapbox-gl/dist/mapbox-gl.css';
 
 /* Custom scrollbar styles */
 @layer utilities {
