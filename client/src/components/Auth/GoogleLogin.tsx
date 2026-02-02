@@ -3,8 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../common/Button';
 
-const LoginPageImage = '/images/LoginPage.png';
-const BusBuddyLogo = '/images/BusBuddyLogo.png';
+const LoginPageImage = '/images/LoginPage.webp';
+const BusBuddyLogo = '/images/BusBuddyLogo.webp';
 
 const GoogleLogin: React.FC = () => {
   const { signInWithGoogle, user, loading, error } = useAuth();
@@ -25,14 +25,14 @@ const GoogleLogin: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full flex bg-[#0D0A2A] text-white font-sans overflow-hidden">
-      
+
       <div className="hidden lg:flex lg:w-[65%] relative">
         <img
           src={LoginPageImage}
           alt="Bus Buddy Illustration"
           className="absolute inset-0 w-full h-full object-cover"
         />
-        
+
         <div className="absolute inset-0 bg-[#0D0A2A]/40 mix-blend-multiply"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-[#0D0A2A] via-transparent to-transparent"></div>
 
@@ -46,7 +46,7 @@ const GoogleLogin: React.FC = () => {
           </div>
           <div className="mb-10">
             <h2 className="text-5xl font-bold mb-4 leading-tight">
-              Your Campus Commute, <br/> 
+              Your Campus Commute, <br />
               <span className="text-[#B045FF]">Simplified.</span>
             </h2>
             <p className="text-gray-300 text-xl max-w-lg">
@@ -61,10 +61,10 @@ const GoogleLogin: React.FC = () => {
         <div className="absolute lg:hidden top-0 right-0 w-64 h-64 bg-[#B045FF] blur-[100px] opacity-20"></div>
 
         <div className="absolute top-8 left-8 lg:hidden flex items-center gap-2">
-            <img src={BusBuddyLogo} alt="BusBuddy Logo" className="w-8 h-8" />
-            <h1 className="text-2xl font-bold">
-              Bus<span className="text-[#B045FF]">Buddy</span>
-            </h1>
+          <img src={BusBuddyLogo} alt="BusBuddy Logo" className="w-8 h-8" />
+          <h1 className="text-2xl font-bold">
+            Bus<span className="text-[#B045FF]">Buddy</span>
+          </h1>
         </div>
 
         <div className="w-full max-w-sm space-y-8 z-10">

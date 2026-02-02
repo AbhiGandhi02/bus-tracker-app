@@ -3,7 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Users, LogOut, LayoutDashboard, Bus, Map, Calendar, Menu, X } from 'lucide-react';
 
-const BusBuddyLogo = '/images/BusBuddyLogo.png';
+const BusBuddyLogo = '/images/BusBuddyLogo.webp';
 
 interface SidebarProps {
   isHovered: boolean;
@@ -19,8 +19,8 @@ interface NavItem {
 const Sidebar: React.FC<SidebarProps> = ({ isHovered, setIsHovered }) => {
   const { logout, isMasterAdmin, isPlanner, isOperator, user } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation(); 
-  
+  const location = useLocation();
+
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -54,9 +54,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isHovered, setIsHovered }) => {
       {/* HEADER */}
       <div className="h-20 flex items-center pl-6 border-b border-white/5 relative overflow-hidden whitespace-nowrap shrink-0">
         <div className="shrink-0 flex items-center justify-center">
-            <span className="text-3xl filter drop-shadow-lg">
-              <img src={BusBuddyLogo} alt="BusBuddy Logo" className="w-8 h-8 object-contain" />
-            </span>
+          <span className="text-3xl filter drop-shadow-lg">
+            <img src={BusBuddyLogo} alt="BusBuddy Logo" className="w-8 h-8 object-contain" />
+          </span>
         </div>
         <div className={`ml-4 transition-all duration-300 overflow-hidden ${showText ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'}`}>
           <h1 className="text-lg font-bold tracking-tight text-white leading-none">
@@ -80,10 +80,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isHovered, setIsHovered }) => {
             to={item.path}
             end={item.path === '/admin/schedule'}
             className={({ isActive }) =>
-              `relative flex items-center gap-4 px-3 py-3 rounded-xl transition-all duration-200 group overflow-hidden whitespace-nowrap ${
-                isActive
-                  ? 'bg-[#B045FF]/20 text-white shadow-[0_0_15px_rgba(176,69,255,0.3)] border border-[#B045FF]/30'
-                  : 'text-gray-400 hover:bg-white/5 hover:text-gray-100'
+              `relative flex items-center gap-4 px-3 py-3 rounded-xl transition-all duration-200 group overflow-hidden whitespace-nowrap ${isActive
+                ? 'bg-[#B045FF]/20 text-white shadow-[0_0_15px_rgba(176,69,255,0.3)] border border-[#B045FF]/30'
+                : 'text-gray-400 hover:bg-white/5 hover:text-gray-100'
               }`
             }
           >
@@ -91,7 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isHovered, setIsHovered }) => {
             <span className={`text-sm font-medium transition-all duration-300 ${showText ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
               {item.label}
             </span>
-            
+
             {!showText && !isMobileOpen && (
               <div className="absolute left-full ml-4 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl border border-white/10">
                 {item.label}
@@ -102,16 +101,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isHovered, setIsHovered }) => {
 
         {isOperator() && (
           <div className="mt-8 pt-6 border-t border-white/5">
-              <div className={`px-3 mb-2 transition-all duration-300 overflow-hidden whitespace-nowrap ${showText ? 'opacity-100 max-h-10' : 'opacity-0 max-h-0'}`}>
+            <div className={`px-3 mb-2 transition-all duration-300 overflow-hidden whitespace-nowrap ${showText ? 'opacity-100 max-h-10' : 'opacity-0 max-h-0'}`}>
               <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Driver View</p>
             </div>
             <NavLink
               to="/driver"
               className={({ isActive }) =>
-                `relative flex items-center gap-4 px-3 py-3 rounded-xl transition-all duration-200 group overflow-hidden whitespace-nowrap ${
-                  isActive
-                    ? 'bg-amber-500/20 text-amber-200 border border-amber-500/30'
-                    : 'text-amber-500/80 hover:bg-amber-500/10 hover:text-amber-300'
+                `relative flex items-center gap-4 px-3 py-3 rounded-xl transition-all duration-200 group overflow-hidden whitespace-nowrap ${isActive
+                  ? 'bg-amber-500/20 text-amber-200 border border-amber-500/30'
+                  : 'text-amber-500/80 hover:bg-amber-500/10 hover:text-amber-300'
                 }`
               }
             >
@@ -150,7 +148,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isHovered, setIsHovered }) => {
 
   return (
     <>
-      <button 
+      <button
         onClick={() => setIsMobileOpen(true)}
         className="md:hidden fixed top-4 left-4 z-50 p-1.5 bg-[#0D0A2A] text-white rounded-lg border border-white/10 shadow-lg active:scale-95 transition-transform"
       >
@@ -159,7 +157,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isHovered, setIsHovered }) => {
 
       {/* Backdrop */}
       {isMobileOpen && (
-        <div 
+        <div
           className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity"
           onClick={() => setIsMobileOpen(false)}
         />
@@ -167,7 +165,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isHovered, setIsHovered }) => {
 
       {/* Drawer */}
       <div className={`md:hidden fixed inset-y-0 left-0 w-64 bg-[#0D0A2A] z-50 shadow-2xl transform transition-transform duration-300 ease-in-out border-r border-white/10 flex flex-col ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <button 
+        <button
           onClick={() => setIsMobileOpen(false)}
           className="absolute top-4 right-4 text-gray-400 hover:text-white z-50"
         >
@@ -177,10 +175,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isHovered, setIsHovered }) => {
       </div>
 
       {/* DESKTOP VIEW */}
-      <div 
-        className={`hidden md:flex fixed left-0 top-0 h-screen bg-[#0D0A2A] border-r border-white/10 text-white z-50 flex-col transition-all duration-300 ease-in-out shadow-2xl ${
-          isHovered ? 'w-60' : 'w-20'
-        }`}
+      <div
+        className={`hidden md:flex fixed left-0 top-0 h-screen bg-[#0D0A2A] border-r border-white/10 text-white z-50 flex-col transition-all duration-300 ease-in-out shadow-2xl ${isHovered ? 'w-60' : 'w-20'
+          }`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >

@@ -9,7 +9,7 @@ import { ChevronLeft, ChevronRight, } from 'lucide-react';
 import { useSocket } from '../../context/SocketContext';
 import Navbar from '../../components/layout/Navbar';
 
-const BusBuddyLogo = '/images/BusBuddyLogo.png';
+const BusBuddyLogo = '/images/BusBuddyLogo.webp';
 
 const getToday = (): Date => {
   const today = new Date();

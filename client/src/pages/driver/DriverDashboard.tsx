@@ -6,7 +6,9 @@ import Loader from '../../components/common/Loader';
 import { PlayCircle, StopCircle, Navigation, Clock, Radio, ArrowLeft } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
-const BusBuddyLogo = '/images/BusBuddyLogo.png';
+import useWakeLock from '../../hooks/useWakeLock';
+
+const BusBuddyLogo = '/images/BusBuddyLogo.webp';
 
 const getTodayString = (): string => {
   const today = new Date();
@@ -23,10 +25,10 @@ const DriverDashboard: React.FC = () => {
   const [rides, setRides] = useState<ScheduledRide[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+  const { requestWakeLock, releaseWakeLock } = useWakeLock();
   const [trackingRideId, setTrackingRideId] = useState<string | null>(null);
   const [lastLocation, setLastLocation] = useState<RideLocation | null>(null);
-  
+
   const watchIdRef = useRef<number | null>(null);
 
   // --- API: Fetch Rides ---
@@ -56,10 +58,19 @@ const DriverDashboard: React.FC = () => {
     fetchRides();
   }, [fetchRides]);
 
+  // Manage wake lock based on tracking state
+  useEffect(() => {
+    if (trackingRideId) {
+      requestWakeLock();
+    } else {
+      releaseWakeLock();
+    }
+  }, [trackingRideId, requestWakeLock, releaseWakeLock]);
+
   const handleStartClick = (rideId: string) => {
     startTracking(rideId);
   };
-      
+
   // --- TRACKING LOGIC ---
   const stopTracking = useCallback(() => {
     if (watchIdRef.current !== null) {
@@ -76,7 +87,7 @@ const DriverDashboard: React.FC = () => {
     }
 
     setTrackingRideId(rideId);
-    
+
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by your browser.');
       return;
@@ -95,9 +106,9 @@ const DriverDashboard: React.FC = () => {
         lng: longitude,
         timestamp: new Date(position.timestamp)
       };
-      
+
       setLastLocation(newLocation);
-      
+
       scheduledRideAPI.updateLocation(rideId, newLocation)
         .catch(err => {
           console.error("Failed to send location update:", err);
@@ -111,7 +122,7 @@ const DriverDashboard: React.FC = () => {
     };
 
     watchIdRef.current = navigator.geolocation.watchPosition(onSuccess, onError, options);
-    
+
     // Optimistic update
     scheduledRideAPI.update(rideId, { status: 'In Progress' })
       .then(() => fetchRides());
@@ -120,7 +131,7 @@ const DriverDashboard: React.FC = () => {
   useEffect(() => {
     const rideIdFromUrl = searchParams.get('rideId');
     if (rideIdFromUrl && trackingRideId !== rideIdFromUrl) {
-       startTracking(rideIdFromUrl);
+      startTracking(rideIdFromUrl);
     }
   }, [searchParams, trackingRideId, startTracking]);
 
@@ -131,7 +142,7 @@ const DriverDashboard: React.FC = () => {
   if (loading && !rides.length) {
     return (
       <div className="h-screen w-full bg-[#0D0A2A] flex flex-col items-center justify-center gap-4">
-        <Loader size="lg"/>
+        <Loader size="lg" />
         <p className="text-gray-400 animate-pulse">Loading Dashboard...</p>
       </div>
     );
@@ -139,9 +150,9 @@ const DriverDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0D0A2A] text-white">
-      
-      <Navbar 
-        user={user} 
+
+      <Navbar
+        user={user}
         handleLogout={async () => {
           stopTracking();
           await logout();
@@ -152,11 +163,11 @@ const DriverDashboard: React.FC = () => {
       />
 
       <main className="pt-6 lg:pt-8 md:pt-32 px-4 pb-20 max-w-3xl mx-auto">
-        
+
         {/* BACK BUTTON */}
         <div className="flex items-center gap-4 mb-4 md:mb-6">
-          <button 
-            onClick={() => navigate('/')} 
+          <button
+            onClick={() => navigate('/')}
             className="p-2 bg-white/5 border border-white/10 rounded-full hover:bg-white/10 text-gray-200 transition-all group"
           >
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
@@ -177,7 +188,7 @@ const DriverDashboard: React.FC = () => {
         {trackingRide ? (
           /* --- ACTIVE TRACKING CARD --- */
           <div className="relative overflow-hidden bg-[#1A1640] rounded-3xl border-2 border-[#B045FF]/50 shadow-[0_0_50px_-12px_rgba(176,69,255,0.3)] p-5 md:p-8">
-             <div className="absolute top-0 right-0 w-64 h-64 bg-[#B045FF]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#B045FF]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
             {/* Status Indicator */}
             <div className="flex justify-between items-start mb-6 relative z-10">
@@ -259,84 +270,84 @@ const DriverDashboard: React.FC = () => {
                 </p>
               </div>
             )}
-            
+
             <div className="grid gap-5">
               {rides.map(ride => {
-                  const route = ride.routeId as Route;
-                  const bus = ride.busId as BusMaster;
-                  
-                  return (
-                    <div 
-                      key={ride._id} 
-                      className="group relative overflow-hidden bg-gradient-to-br from-[#1A1640] to-[#0D0A2A] rounded-2xl border border-white/10 hover:border-[#B045FF]/40 shadow-xl transition-all duration-300"
-                    >
-                      {/* Status Strip on Left */}
-                      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${ride.status === 'In Progress' ? 'bg-green-500' : 'bg-blue-500'}`} />
+                const route = ride.routeId as Route;
+                const bus = ride.busId as BusMaster;
 
-                      <div className="p-5 md:p-6">
-                        <div className="flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
-                          
-                          {/* 1. Time & Bus Info */}
-                          <div className="flex-1 w-full md:w-auto">
-                             <div className="flex items-center gap-3 mb-4">
-                                <div className="px-3 py-1 rounded bg-white/5 border border-white/10 text-xl font-bold font-mono text-white">
-                                  {ride.departureTime}
-                                </div>
-                                <span className={`text-xs font-bold px-2 py-1 rounded uppercase tracking-wider ${ride.status === 'In Progress' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                                  {ride.status}
-                                </span>
-                             </div>
+                return (
+                  <div
+                    key={ride._id}
+                    className="group relative overflow-hidden bg-gradient-to-br from-[#1A1640] to-[#0D0A2A] rounded-2xl border border-white/10 hover:border-[#B045FF]/40 shadow-xl transition-all duration-300"
+                  >
+                    {/* Status Strip on Left */}
+                    <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${ride.status === 'In Progress' ? 'bg-green-500' : 'bg-blue-500'}`} />
 
-                             <div className="flex items-center gap-3">
-                                <img src={BusBuddyLogo} alt="Bus" className="w-10 h-10 object-contain" />
-                                <div>
-                                  <h3 className="text-lg font-bold text-gray-200 leading-none mb-1">
-                                    {bus.busNumber}
-                                  </h3>
-                                  <p className="text-xs text-gray-500 uppercase font-semibold">
-                                    {bus.busType || 'Standard'} Bus
-                                  </p>
-                                </div>
-                             </div>
+                    <div className="p-5 md:p-6">
+                      <div className="flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
+
+                        {/* 1. Time & Bus Info */}
+                        <div className="flex-1 w-full md:w-auto">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="px-3 py-1 rounded bg-white/5 border border-white/10 text-xl font-bold font-mono text-white">
+                              {ride.departureTime}
+                            </div>
+                            <span className={`text-xs font-bold px-2 py-1 rounded uppercase tracking-wider ${ride.status === 'In Progress' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                              {ride.status}
+                            </span>
                           </div>
 
-                          {/* 2. Visual Route Timeline */}
-                          <div className="flex-1 w-full md:w-auto border-l border-white/5 pl-4 md:pl-6 py-2">
-                             <div className="relative pl-6 space-y-6">
-                                {/* Vertical Dotted Line */}
-                                <div className="absolute left-[0.7rem] top-2 bottom-2 w-0.5 border-l-2 border-dashed border-gray-700" />
-                                
-                                {/* Start */}
-                                <div className="relative">
-                                  <div className="absolute -left-6 top-1 w-3 h-3 rounded-full bg-blue-500 border-2 border-[#0D0A2A]" />
-                                  <p className="text-xs text-gray-500 uppercase">Start</p>
-                                  <p className="text-sm font-semibold text-white truncate max-w-[200px]">{route.departureLocation}</p>
-                                </div>
-
-                                {/* End */}
-                                <div className="relative">
-                                  <div className="absolute -left-6 top-1 w-3 h-3 rounded-full bg-[#B045FF] border-2 border-[#0D0A2A]" />
-                                  <p className="text-xs text-gray-500 uppercase">End</p>
-                                  <p className="text-sm font-semibold text-white truncate max-w-[200px]">{route.arrivalLocation}</p>
-                                </div>
-                             </div>
+                          <div className="flex items-center gap-3">
+                            <img src={BusBuddyLogo} alt="Bus" className="w-10 h-10 object-contain" />
+                            <div>
+                              <h3 className="text-lg font-bold text-gray-200 leading-none mb-1">
+                                {bus.busNumber}
+                              </h3>
+                              <p className="text-xs text-gray-500 uppercase font-semibold">
+                                {bus.busType || 'Standard'} Bus
+                              </p>
+                            </div>
                           </div>
-
-                          {/* 3. Action Button */}
-                          <div className="w-full md:w-auto">
-                            <button 
-                              onClick={() => handleStartClick(ride._id)}
-                              className="w-full md:w-32 h-12 rounded-xl bg-gradient-to-r from-[#B045FF] to-[#7c3aed] hover:from-[#c069ff] hover:to-[#8b5cf6] text-white font-bold shadow-lg shadow-[#B045FF]/20 hover:shadow-[#B045FF]/40 transform group-hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2"
-                            >
-                              <span>GO</span>
-                              <PlayCircle className="w-4 h-4 fill-white/20" />
-                            </button>
-                          </div>
-
                         </div>
+
+                        {/* 2. Visual Route Timeline */}
+                        <div className="flex-1 w-full md:w-auto border-l border-white/5 pl-4 md:pl-6 py-2">
+                          <div className="relative pl-6 space-y-6">
+                            {/* Vertical Dotted Line */}
+                            <div className="absolute left-[0.7rem] top-2 bottom-2 w-0.5 border-l-2 border-dashed border-gray-700" />
+
+                            {/* Start */}
+                            <div className="relative">
+                              <div className="absolute -left-6 top-1 w-3 h-3 rounded-full bg-blue-500 border-2 border-[#0D0A2A]" />
+                              <p className="text-xs text-gray-500 uppercase">Start</p>
+                              <p className="text-sm font-semibold text-white truncate max-w-[200px]">{route.departureLocation}</p>
+                            </div>
+
+                            {/* End */}
+                            <div className="relative">
+                              <div className="absolute -left-6 top-1 w-3 h-3 rounded-full bg-[#B045FF] border-2 border-[#0D0A2A]" />
+                              <p className="text-xs text-gray-500 uppercase">End</p>
+                              <p className="text-sm font-semibold text-white truncate max-w-[200px]">{route.arrivalLocation}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 3. Action Button */}
+                        <div className="w-full md:w-auto">
+                          <button
+                            onClick={() => handleStartClick(ride._id)}
+                            className="w-full md:w-32 h-12 rounded-xl bg-gradient-to-r from-[#B045FF] to-[#7c3aed] hover:from-[#c069ff] hover:to-[#8b5cf6] text-white font-bold shadow-lg shadow-[#B045FF]/20 hover:shadow-[#B045FF]/40 transform group-hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2"
+                          >
+                            <span>GO</span>
+                            <PlayCircle className="w-4 h-4 fill-white/20" />
+                          </button>
+                        </div>
+
                       </div>
                     </div>
-                  );
+                  </div>
+                );
               })}
             </div>
           </div>

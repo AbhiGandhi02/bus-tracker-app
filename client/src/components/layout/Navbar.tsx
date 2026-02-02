@@ -1,7 +1,7 @@
 import React from 'react';
 import { LogOut, User as UserIcon } from 'lucide-react';
 
-const BusBuddy = '/images/BusBuddyLogo.png';
+const BusBuddy = '/images/BusBuddyLogo.webp';
 
 interface NavbarProps {
   user: {
