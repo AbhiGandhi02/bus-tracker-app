@@ -49,8 +49,13 @@ const scheduledRideSchema = new mongoose.Schema({
 
 // Compound index for date queries
 scheduledRideSchema.index({ date: 1, departureTime: 1 });
+// Index for faster populate operations
+scheduledRideSchema.index({ busId: 1 });
+scheduledRideSchema.index({ routeId: 1 });
+// Index for status-based queries
+scheduledRideSchema.index({ date: 1, status: 1 });
 
-scheduledRideSchema.pre('save', function(next) {
+scheduledRideSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
 });

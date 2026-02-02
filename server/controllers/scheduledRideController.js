@@ -1,7 +1,7 @@
 const ScheduledRide = require('../models/ScheduledRide');
 
-const Route = require('../models/Route'); 
-const { getDistance } = require('../utils/locationUtils'); 
+const Route = require('../models/Route');
+const { getDistance } = require('../utils/locationUtils');
 
 // @desc    Get scheduled rides for a date
 // @route   GET /api/scheduled-rides?date=YYYY-MM-DD
@@ -9,7 +9,7 @@ const { getDistance } = require('../utils/locationUtils');
 exports.getScheduledRides = async (req, res) => {
   try {
     const { date } = req.query;
-    
+
     // Default to today if no date provided
     const queryDate = date ? new Date(date) : new Date();
     queryDate.setHours(0, 0, 0, 0);
@@ -23,9 +23,10 @@ exports.getScheduledRides = async (req, res) => {
         $lt: nextDay
       }
     })
-    .populate('busId')
-    .populate('routeId')
-    .sort({ departureTime: 1 });
+      .populate('busId', 'busNumber driverName busType') // Only select needed fields
+      .populate('routeId', 'routeName departureLocation arrivalLocation polyline departureCoords arrivalCoords') // Only select needed fields
+      .sort({ departureTime: 1 })
+      .lean(); // Returns plain JS objects (faster, less memory)
 
     res.status(200).json({
       success: true,
@@ -74,8 +75,8 @@ exports.updateScheduledRide = async (req, res) => {
       req.body,
       { new: true, runValidators: true }
     )
-    .populate('busId')
-    .populate('routeId');
+      .populate('busId')
+      .populate('routeId');
 
     if (!ride) {
       return res.status(404).json({
@@ -131,12 +132,12 @@ exports.updateRideLocation = async (req, res) => {
     };
 
     // Define our trigger distance (e.g., 50 meters)
-    const GEOFENCE_RADIUS = 50; 
+    const GEOFENCE_RADIUS = 50;
     let statusHasChanged = false;
 
     // We only process auto-updates for active rides
     if (ride.status === 'Scheduled' || ride.status === 'In Progress') {
-      
+
       // We must fetch the route to get its coordinates
       const route = await Route.findById(ride.routeId);
       if (route) {
@@ -144,13 +145,13 @@ exports.updateRideLocation = async (req, res) => {
         // CASE 1: The ride is "Scheduled" and waiting to start.
         if (ride.status === 'Scheduled') {
           const distanceToStart = getDistance(driverLocation, route.departureCoords);
-          
+
           if (distanceToStart < GEOFENCE_RADIUS) {
             ride.status = 'In Progress';
             statusHasChanged = true;
           }
-        } 
-        
+        }
+
         // CASE 2: The ride is "In Progress" and heading to the finish.
         else if (ride.status === 'In Progress') {
           const distanceToEnd = getDistance(driverLocation, route.arrivalCoords);
@@ -169,7 +170,7 @@ exports.updateRideLocation = async (req, res) => {
     if (req.app.get('io')) {
       const populatedRide = await ScheduledRide.findById(ride._id).populate('busId', 'busNumber');
       const busNumber = populatedRide.busId ? populatedRide.busId.busNumber : '...';
-      
+
       req.app.get('io').emit('ride-location-update', {
         rideId: ride._id,
         busNumber: busNumber,
