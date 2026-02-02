@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ScheduledRide, RideStatusUpdate, RideLocationUpdate } from '../../types';
 import { scheduledRideAPI } from '../../services/api';
