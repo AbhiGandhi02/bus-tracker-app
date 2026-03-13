@@ -2,6 +2,7 @@ const ScheduledRide = require('../models/ScheduledRide');
 
 const Route = require('../models/Route');
 const { getDistance } = require('../utils/locationUtils');
+const { getETA, clearETACache } = require('../utils/etaService');
 
 // @desc    Get scheduled rides for a date
 // @route   GET /api/scheduled-rides?date=YYYY-MM-DD
@@ -135,11 +136,12 @@ exports.updateRideLocation = async (req, res) => {
     const GEOFENCE_RADIUS = 50;
     let statusHasChanged = false;
 
+    // Fetch route for geofence checks and ETA calculation
+    const route = await Route.findById(ride.routeId);
+
     // We only process auto-updates for active rides
     if (ride.status === 'Scheduled' || ride.status === 'In Progress') {
 
-      // We must fetch the route to get its coordinates
-      const route = await Route.findById(ride.routeId);
       if (route) {
 
         // CASE 1: The ride is "Scheduled" and waiting to start.
@@ -164,9 +166,30 @@ exports.updateRideLocation = async (req, res) => {
       }
     }
 
+    // Calculate ETA to destination (throttled, traffic-aware)
+    let etaSeconds = null;
+    if (ride.status === 'In Progress' && route) {
+      etaSeconds = await getETA(
+        ride._id.toString(),
+        driverLocation,
+        route.arrivalCoords
+      );
+    }
+
+    // Persist ETA on the ride document (available on initial page load)
+    if (etaSeconds !== null) {
+      ride.eta = etaSeconds;
+    }
+
+    // Clear ETA when ride completes
+    if (statusHasChanged && ride.status === 'Completed') {
+      ride.eta = null;
+      clearETACache(ride._id.toString());
+    }
+
     await ride.save();
 
-    // Emit socket event for location
+    // Emit socket event for location + ETA
     if (req.app.get('io')) {
       const populatedRide = await ScheduledRide.findById(ride._id).populate('busId', 'busNumber');
       const busNumber = populatedRide.busId ? populatedRide.busId.busNumber : '...';
@@ -174,7 +197,8 @@ exports.updateRideLocation = async (req, res) => {
       req.app.get('io').emit('ride-location-update', {
         rideId: ride._id,
         busNumber: busNumber,
-        location: ride.currentLocation
+        location: ride.currentLocation,
+        eta: ride.eta  // Always use persisted ETA (never null if we've calculated it before)
       });
 
       if (statusHasChanged) {

@@ -9,7 +9,7 @@ const statusPillStyles: Record<ScheduledRide['status'], string> = {
   'Cancelled': 'bg-red-500/20 text-red-300 border-red-500/30',
 };
 
-const RideDetails: React.FC<RideDetailsProps> = ({ ride }) => {
+const RideDetails: React.FC<RideDetailsProps> = ({ ride, eta }) => {
   if (!ride) {
     return (
       <div className="bg-[#1A1640] border border-white/10 rounded-2xl p-6 h-full flex flex-col items-center justify-center text-center shadow-lg">
@@ -27,6 +27,15 @@ const RideDetails: React.FC<RideDetailsProps> = ({ ride }) => {
     return new Date(date).toLocaleDateString('en-US', {
       weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
     });
+  };
+
+  const formatETA = (seconds: number): string => {
+    if (seconds < 60) return 'Less than 1 min';
+    const mins = Math.round(seconds / 60);
+    if (mins < 60) return `${mins} min`;
+    const hrs = Math.floor(mins / 60);
+    const remainMins = mins % 60;
+    return remainMins > 0 ? `${hrs} hr ${remainMins} min` : `${hrs} hr`;
   };
 
   return (
@@ -84,6 +93,31 @@ const RideDetails: React.FC<RideDetailsProps> = ({ ride }) => {
                )}
             </div>
           </div>
+
+          {/* Live ETA */}
+          {ride.status === 'In Progress' && eta !== null && eta !== undefined && (
+            <div>
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Navigation className="w-3 h-3 text-[#B045FF]" />
+                Estimated Arrival
+              </h3>
+              <div className="bg-gradient-to-r from-[#B045FF]/10 to-[#7c3aed]/10 border border-[#B045FF]/20 p-4 rounded-xl">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold text-white">{formatETA(eta)}</p>
+                    <p className="text-xs text-gray-400 mt-1">Based on live traffic</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#B045FF]/20 rounded-full">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#B045FF] opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[#B045FF]"></span>
+                    </span>
+                    <span className="text-[10px] font-bold text-[#B045FF] uppercase tracking-wider">Live</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Route Info */}
           <div>

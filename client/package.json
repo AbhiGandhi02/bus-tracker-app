@@ -3,6 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
+    "@capacitor-community/background-geolocation": "^1.2.26",
+    "@capacitor/android": "^8.1.0",
+    "@capacitor/app": "^8.0.1",
+    "@capacitor/cli": "^7.5.0",
+    "@capacitor/core": "^8.1.0",
+    "@capacitor/local-notifications": "^8.0.1",
     "@mapbox/polyline": "^1.2.1",
     "@react-google-maps/api": "^2.20.7",
     "@testing-library/jest-dom": "^5.17.0",

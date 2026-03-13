@@ -53,6 +53,16 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
   const [error] = useState<string | null>(null);
   const { socket } = useSocket();
   const [viewState, setViewState] = useState<Partial<ViewState>>(config.MAP_DEFAULTS);
+  const [rideETAs, setRideETAs] = useState<Record<string, number | null>>({});
+
+  const formatETA = (seconds: number): string => {
+    if (seconds < 60) return '< 1 min';
+    const mins = Math.round(seconds / 60);
+    if (mins < 60) return `~${mins} min`;
+    const hrs = Math.floor(mins / 60);
+    const remainMins = mins % 60;
+    return remainMins > 0 ? `~${hrs}h ${remainMins}m` : `~${hrs}h`;
+  };
 
   const routeGeoJson = useMemo(() => {
     const currentRide = ridesWithLocation[0];
@@ -115,6 +125,9 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
           ? { ...prevSelected, currentLocation: update.location }
           : prevSelected
       );
+      if (update.eta !== null && update.eta !== undefined) {
+        setRideETAs(prev => ({ ...prev, [update.rideId]: update.eta }));
+      }
     };
     socket.on('ride-location-update', handleLocationUpdate);
     return () => {
@@ -256,6 +269,14 @@ const MapComponent: React.FC<RideMapProps> = ({ rides, selectedRide: selectedRid
                 <p className="text-xs text-gray-500 mt-2">
                   Last updated: {new Date(selectedRide.currentLocation.timestamp).toLocaleTimeString()}
                 </p>
+                {rideETAs[selectedRide._id] && (
+                  <div className="mt-2 pt-2 border-t border-gray-200">
+                    <p className="text-sm font-bold text-indigo-600">
+                      🕐 Arriving in {formatETA(rideETAs[selectedRide._id]!)}
+                    </p>
+                    <p className="text-[10px] text-gray-400">Based on live traffic</p>
+                  </div>
+                )}
               </div>
             </Popup>
           )}

@@ -37,6 +37,11 @@ const scheduledRideSchema = new mongoose.Schema({
       type: Date
     }
   },
+  // Live ETA to destination in seconds (updated with each location)
+  eta: {
+    type: Number,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now

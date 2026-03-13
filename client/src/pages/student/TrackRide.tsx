@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ScheduledRide, RideStatusUpdate, RideLocationUpdate } from '../../types';
 import { scheduledRideAPI } from '../../services/api';
@@ -63,7 +63,9 @@ const TrackRide: React.FC = () => {
   const [ride, setRide] = useState<ScheduledRide | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [eta, setEta] = useState<number | null>(null);
   const { socket } = useSocket();
+  const rideIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!rideId) {
@@ -86,6 +88,11 @@ const TrackRide: React.FC = () => {
           const foundRide = response.data.data.find(r => r._id === rideId);
           if (foundRide) {
             setRide(foundRide);
+            rideIdRef.current = foundRide._id;
+            // Load persisted ETA from database (available immediately)
+            if (foundRide.eta !== null && foundRide.eta !== undefined) {
+              setEta(foundRide.eta);
+            }
           } else {
             setError(`Ride not found for ${dateFromQuery}.`);
           }
@@ -109,23 +116,28 @@ const TrackRide: React.FC = () => {
   }, [ride]);
 
   useEffect(() => {
-    if (!socket || !ride || !isToday || ride.status === 'Completed' || ride.status === 'Cancelled') {
+    if (!socket || !rideIdRef.current || !isToday) {
       return;
     }
 
+    const currentRideId = rideIdRef.current;
+
     const handleStatusUpdate = (update: RideStatusUpdate) => {
-      if (update.rideId === ride._id) {
+      if (update.rideId === currentRideId) {
         setRide(prevRide => prevRide ? { ...prevRide, status: update.status } : null);
       }
     };
 
     const handleLocationUpdate = (update: RideLocationUpdate) => {
-      if (update.rideId === ride._id) {
+      if (update.rideId === currentRideId) {
         setRide(prevRide => prevRide ? { 
           ...prevRide, 
           currentLocation: update.location,
           status: 'In Progress'
         } : null);
+        if (update.eta !== null && update.eta !== undefined) {
+          setEta(update.eta);
+        }
       }
     };
 
@@ -136,7 +148,7 @@ const TrackRide: React.FC = () => {
       socket.off('ride-status-update', handleStatusUpdate);
       socket.off('ride-location-update', handleLocationUpdate);
     };
-  }, [socket, ride, isToday]);
+  }, [socket, isToday]); // Removed 'ride' — use rideIdRef to prevent re-subscription
 
   const handleBack = () => {
     if (ride) {
@@ -215,7 +227,7 @@ const TrackRide: React.FC = () => {
 
           {/* Details Section */}
           <div className="flex-1 lg:w-[400px] lg:flex-none h-80 lg:h-auto overflow-y-auto custom-scrollbar min-h-0">
-            <RideDetails ride={ride} />
+            <RideDetails ride={ride} eta={eta} />
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ScheduledRide, RideStatusUpdate, RideLocationUpdate } from '../../types';
 import { scheduledRideAPI } from '../../services/api';
@@ -58,6 +58,8 @@ const AdminTrackRide: React.FC = () => {
   const [ride, setRide] = useState<ScheduledRide | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [eta, setEta] = useState<number | null>(null);
+  const rideIdRef = useRef<string | null>(null);
   
   const { socket } = useSocket();
 
@@ -82,6 +84,10 @@ const AdminTrackRide: React.FC = () => {
           const foundRide = response.data.data.find(r => r._id === rideId);
           if (foundRide) {
             setRide(foundRide);
+            rideIdRef.current = foundRide._id;
+            if (foundRide.eta !== null && foundRide.eta !== undefined) {
+              setEta(foundRide.eta);
+            }
           } else {
             setError(`Ride not found.`);
           }
@@ -100,22 +106,27 @@ const AdminTrackRide: React.FC = () => {
 
   // --- SOCKET LISTENERS ---
   useEffect(() => {
-    if (!socket || !ride || ride.status === 'Completed' || ride.status === 'Cancelled') {
+    if (!socket || !rideIdRef.current) {
       return;
     }
+
+    const currentRideId = rideIdRef.current;
     
     const handleStatusUpdate = (update: RideStatusUpdate) => {
-      if (update.rideId === ride._id) {
+      if (update.rideId === currentRideId) {
         setRide(prevRide => prevRide ? { ...prevRide, status: update.status } : null);
       }
     };
     const handleLocationUpdate = (update: RideLocationUpdate) => {
-      if (update.rideId === ride._id) {
+      if (update.rideId === currentRideId) {
         setRide(prevRide => prevRide ? { 
           ...prevRide, 
           currentLocation: update.location,
           status: 'In Progress'
         } : null);
+        if (update.eta !== null && update.eta !== undefined) {
+          setEta(update.eta);
+        }
       }
     };
 
@@ -126,7 +137,7 @@ const AdminTrackRide: React.FC = () => {
       socket.off('ride-status-update', handleStatusUpdate);
       socket.off('ride-location-update', handleLocationUpdate);
     };
-  }, [socket, ride]);
+  }, [socket]); // Removed 'ride' — use rideIdRef to prevent re-subscription
 
   const handleBack = () => {
     if (ride) {
@@ -201,7 +212,7 @@ const AdminTrackRide: React.FC = () => {
 
           {/* --- DETAILS SECTION --- */}
           <div className="flex-1 lg:w-[400px] lg:flex-none h-80 lg:h-auto overflow-y-auto custom-scrollbar min-h-0">
-            <RideDetails ride={ride} />
+            <RideDetails ride={ride} eta={eta} />
           </div>
           
         </div>
