@@ -5,26 +5,13 @@
  * Falls back to navigator.geolocation.watchPosition() in browser.
  */
 
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 
-// Dynamic import to avoid build errors on web
-let BackgroundGeolocation: any = null;
+// Webpack safe: registerPlugin doesn't attempt to resolve a physical JS file.
+// It connects to the native Capacitor bridge at runtime.
+const BackgroundGeolocation = registerPlugin<any>('BackgroundGeolocation');
 
 const isNative = Capacitor.isNativePlatform();
-
-/**
- * Initialize the plugin (only on native platforms)
- */
-async function loadPlugin() {
-  if (isNative && !BackgroundGeolocation) {
-    try {
-      const module: any = await import('@capacitor-community/background-geolocation');
-      BackgroundGeolocation = module.BackgroundGeolocation || module.default?.BackgroundGeolocation || module;
-    } catch (e) {
-      console.error('[BackgroundLocation] Failed to load plugin:', e);
-    }
-  }
-}
 
 export interface LocationFix {
   lat: number;
@@ -51,7 +38,6 @@ export async function startBackgroundTracking(callback: LocationCallback): Promi
   await stopBackgroundTracking();
 
   if (isNative) {
-    await loadPlugin();
     if (!BackgroundGeolocation) {
       console.warn('[BackgroundLocation] Plugin not available, falling back to browser');
       startBrowserTracking(callback);
