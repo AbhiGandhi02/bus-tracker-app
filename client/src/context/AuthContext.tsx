@@ -1,10 +1,13 @@
 import React, { createContext, useState, useContext, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import {
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   onAuthStateChanged,
   User as FirebaseUser
 } from 'firebase/auth';
+import { Capacitor } from '@capacitor/core';
 import { auth, googleProvider } from '../config/firebase';
 import { User, AuthContextType } from '../types';
 import axios from 'axios';
@@ -60,13 +63,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false);
     });
 
+    // Handle redirect result for native platforms
+    if (Capacitor.isNativePlatform()) {
+      getRedirectResult(auth).catch((err) => {
+        console.error('Error handling redirect:', err);
+        setError(err.message);
+      });
+    }
+
     return () => unsubscribe();
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
     try {
       setError(null);
-      await signInWithPopup(auth, googleProvider);
+      
+      if (Capacitor.isNativePlatform()) {
+        // Native apps handle redirects much better than popups
+        await signInWithRedirect(auth, googleProvider);
+      } else {
+        await signInWithPopup(auth, googleProvider);
+      }
+      
       return { success: true };
     } catch (err: any) {
       const message = err.message || 'Failed to sign in with Google';
