@@ -79,6 +79,7 @@ export interface ScheduledRide {
   departureTime: string;
   status: RideStatus; // Now uses the exported type
   currentLocation?: RideLocation;
+  eta?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -125,6 +126,7 @@ export interface RideListProps {
 
 export interface RideDetailsProps {
   ride: ScheduledRide | null;
+  eta?: number | null;
 }
 
 export interface RideMapProps {
@@ -137,6 +139,7 @@ export interface RideLocationUpdate {
   rideId: string;
   busNumber: string;
   location: RideLocation;
+  eta: number | null; // ETA in seconds to destination, null if unavailable
 }
 
 export interface RideStatusUpdate {
