@@ -33,9 +33,12 @@ app.use(express.json());
 // Enable CORS
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://localhost', // Capacitor Android
-  process.env.CLIENT_URL
-].filter(Boolean);
+  'http://127.0.0.1:3000',
+  'https://bus-tracker-app-cvq9.onrender.com', // Render URL
+  'https://bus-tracker-app-six.vercel.app',    // Vercel URL
+  'https://localhost',                         // Capacitor Default Origin
+  'https://bus-tracker-app-b227b.firebaseapp.com' // Capacitor Firebase Auth Hostname Mapped Origin
+];
 
 app.use(cors({
   origin: function (origin, callback) {
