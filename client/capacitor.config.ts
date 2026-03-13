@@ -5,7 +5,8 @@ const config: CapacitorConfig = {
   appName: 'BusBuddy',
   webDir: 'build',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    hostname: 'bus-tracker-app-b227b.firebaseapp.com'
   },
   plugins: {
     LocalNotifications: {
