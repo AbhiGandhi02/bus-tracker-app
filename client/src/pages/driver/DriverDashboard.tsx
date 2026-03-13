@@ -1,12 +1,12 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { ScheduledRide, BusMaster, Route, RideLocation } from '../../types';
+import React, { useEffect, useState, useCallback } from 'react';
+import { ScheduledRide, BusMaster, Route } from '../../types';
 import { scheduledRideAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import Loader from '../../components/common/Loader';
-import { PlayCircle, StopCircle, Navigation, Clock, Radio, ArrowLeft } from 'lucide-react';
+import { PlayCircle, StopCircle, Navigation, Clock, Radio, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
-import useWakeLock from '../../hooks/useWakeLock';
+import { useBackgroundLocation } from '../../hooks/useBackgroundLocation';
 
 const BusBuddyLogo = '/images/BusBuddyLogo.webp';
 
@@ -25,11 +25,15 @@ const DriverDashboard: React.FC = () => {
   const [rides, setRides] = useState<ScheduledRide[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { requestWakeLock, releaseWakeLock } = useWakeLock();
+  const {
+    isTracking,
+    lastLocation,
+    error: locationError,
+    isNative,
+    startTracking: startBgTracking,
+    stopTracking: stopBgTracking
+  } = useBackgroundLocation();
   const [trackingRideId, setTrackingRideId] = useState<string | null>(null);
-  const [lastLocation, setLastLocation] = useState<RideLocation | null>(null);
-
-  const watchIdRef = useRef<number | null>(null);
 
   // --- API: Fetch Rides ---
   const fetchRides = useCallback(async () => {
@@ -58,75 +62,38 @@ const DriverDashboard: React.FC = () => {
     fetchRides();
   }, [fetchRides]);
 
-  // Manage wake lock based on tracking state
+  // Show location errors
   useEffect(() => {
-    if (trackingRideId) {
-      requestWakeLock();
-    } else {
-      releaseWakeLock();
+    if (locationError) {
+      setError(locationError);
     }
-  }, [trackingRideId, requestWakeLock, releaseWakeLock]);
+  }, [locationError]);
 
   const handleStartClick = (rideId: string) => {
     startTracking(rideId);
   };
 
   // --- TRACKING LOGIC ---
-  const stopTracking = useCallback(() => {
-    if (watchIdRef.current !== null) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
-    }
+  const stopTracking = useCallback(async () => {
+    await stopBgTracking();
     setTrackingRideId(null);
-    setLastLocation(null);
-  }, []);
+  }, [stopBgTracking]);
 
-  const startTracking = useCallback((rideId: string) => {
-    if (watchIdRef.current !== null) {
-      stopTracking();
+  const startTracking = useCallback(async (rideId: string) => {
+    if (isTracking) {
+      await stopTracking();
     }
 
     setTrackingRideId(rideId);
+    setError(null);
 
-    if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser.');
-      return;
-    }
+    await startBgTracking(rideId);
 
-    const options = {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 1000
-    };
-
-    const onSuccess = (position: GeolocationPosition) => {
-      const { latitude, longitude } = position.coords;
-      const newLocation: RideLocation = {
-        lat: latitude,
-        lng: longitude,
-        timestamp: new Date(position.timestamp)
-      };
-
-      setLastLocation(newLocation);
-
-      scheduledRideAPI.updateLocation(rideId, newLocation)
-        .catch(err => {
-          console.error("Failed to send location update:", err);
-        });
-    };
-
-    const onError = (err: GeolocationPositionError) => {
-      console.error(`Geolocation error (${err.code}): ${err.message}`);
-      setError(`Geolocation error: ${err.message}. Please enable location permissions.`);
-      stopTracking();
-    };
-
-    watchIdRef.current = navigator.geolocation.watchPosition(onSuccess, onError, options);
-
-    // Optimistic update
+    // Optimistic update — set ride status to In Progress
     scheduledRideAPI.update(rideId, { status: 'In Progress' })
-      .then(() => fetchRides());
-  }, [stopTracking, fetchRides]);
+      .then(() => fetchRides())
+      .catch(err => console.error('Failed to update ride status:', err));
+  }, [isTracking, stopTracking, startBgTracking, fetchRides]);
 
   useEffect(() => {
     const rideIdFromUrl = searchParams.get('rideId');
@@ -236,7 +203,7 @@ const DriverDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Action Button */}
+            {/* Stop Button */}
             <button
               onClick={stopTracking}
               className="w-full py-3 md:py-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-lg shadow-lg hover:shadow-red-500/25 transition-all flex items-center justify-center gap-3 relative z-10 group"
@@ -244,6 +211,19 @@ const DriverDashboard: React.FC = () => {
               <StopCircle className="w-6 h-6 group-hover:scale-110 transition-transform" />
               Stop Tracking
             </button>
+
+            {/* Battery Optimization Warning (Android only) */}
+            {isNative && (
+              <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-start gap-3 relative z-10">
+                <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-yellow-300">Battery Optimization</p>
+                  <p className="text-xs text-yellow-400/70 mt-0.5">
+                    For reliable tracking, go to Settings → Apps → BusBuddy → Battery → Unrestricted
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
         ) : (

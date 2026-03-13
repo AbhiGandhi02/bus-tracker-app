@@ -33,6 +33,7 @@ app.use(express.json());
 // Enable CORS
 const allowedOrigins = [
   'http://localhost:3000',
+  'https://localhost', // Capacitor Android
   process.env.CLIENT_URL
 ].filter(Boolean);
 
