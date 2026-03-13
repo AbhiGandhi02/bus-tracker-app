@@ -21,14 +21,12 @@ const RETRY_INTERVAL_MS = 5000; // 5 seconds
 
 let pendingQueue: QueuedLocation[] = [];
 let retryTimerId: ReturnType<typeof setInterval> | null = null;
-let currentRideId: string | null = null;
 
 /**
  * Initialize the queue for a specific ride.
  * Starts the retry timer for offline recovery.
  */
 export function initQueue(rideId: string): void {
-  currentRideId = rideId;
   pendingQueue = [];
 
   // Start periodic retry for queued items
@@ -112,7 +110,6 @@ export async function destroyQueue(): Promise<void> {
   }
 
   pendingQueue = [];
-  currentRideId = null;
 }
 
 /**
